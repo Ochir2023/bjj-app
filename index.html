@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BJJ — Учёт учеников</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#000000">
-  <style>
-    body{font-family:Arial;background:#f2f2f2;margin:0;padding:12px}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BJJ Учёт</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<style>
+body{font-family:Arial;background:#f2f2f2;margin:0;padding:12px}
 input,select,button{width:100%;padding:8px;margin-top:5px;font-size:14px;border-radius:6px;border:1px solid #ccc}
 button{background:#111;color:#fff;border:none;margin-top:8px}
 .card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.1);margin-bottom:10px}
@@ -18,36 +18,11 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 .paid{color:green;font-weight:bold}
 .unpaid{color:red;font-weight:bold}
 .hidden{display:none}
-  </style>
+</style>
 </head>
 <body>
 
-<h1>BJJ — Учёт учеников</h1>
-
-<div id="pinScreen" class="card">
-  <h3>Введите PIN</h3>
-  <input type="password" id="pinInput" placeholder="PIN" />
-  <button onclick="checkPin()">Войти</button>
-</div>
-
-<div id="app" class="hidden">
-
-  <div class="card">
-    <select id="month" onchange="render()">
-      <option>Январь</option><option>Февраль</option><option>Март</option><option>Апрель</option>
-      <option>Май</option><option>Июнь</option><option>Июль</option><option>Август</option>
-      <option>Сентябрь</option><option>Октябрь</option><option>Ноябрь</option><option>Декабрь</option>
-    </select>
-    <input id="search" placeholder="Поиск ученика" oninput="render()" />
-  </div>
-
-  <form id="form" class="card">
-    <select id="group"><option>Детская</option><option>Взрослая</option><option>Женская</option></select>
-    <input id="parent" placeholder="ФИО родителя" required />
-    <input id="student" placeholder="ФИО ученика" required />
-    <input id="age" type="number" placeholder="Возраст" />
-    <button>Добавить ученика</button>
-    <h2>BJJ Учёт</h2>
+<h2>BJJ Учёт</h2>
 
 <div id="pinScreen" class="card">
 <input type="password" id="pinInput" placeholder="PIN">
@@ -55,8 +30,12 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 </div>
 
 <div id="app" class="hidden">
+
 <select id="month" onchange="render()">
 <option>Январь</option><option>Февраль</option><option>Март</option>
+<option>Апрель</option><option>Май</option><option>Июнь</option>
+<option>Июль</option><option>Август</option><option>Сентябрь</option>
+<option>Октябрь</option><option>Ноябрь</option><option>Декабрь</option>
 </select>
 <input id="search" placeholder="Поиск ученика" oninput="render()">
 
@@ -67,129 +46,109 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 <input id="age" type="number" placeholder="Возраст">
 <button>Добавить ученика</button>
 </form>
-  </form>
 
-  <div class="card">
-    <strong>Фиксированная оплата:</strong> 3000 ₽<br>
-    <strong>Доход за месяц:</strong> <span id="income">0</span><br>
-    <strong>Детская:</strong> <span id="childIncome">0</span><br>
-    <strong>Взрослая:</strong> <span id="adultIncome">0</span><br>
-    <strong>Женская:</strong> <span id="womenIncome">0</span>
-  </div>
+<div class="card">
+<strong>Фиксированная оплата:</strong> 3000 ₽<br>
+<strong>Доход за месяц:</strong> <span id="income">0</span>
+</div>
 
-  <div class="card">
-    <h3>Резервная копия (Яндекс Диск)</h3>
-    <input id="yandexToken" placeholder="OAuth токен Яндекс Диска" />
-    <button onclick="saveToken()">Сохранить токен</button>
-    <button onclick="backup()">Сделать резервную копию</button>
-  </div>
+<div class="card">
+<h3>Резервная копия (Яндекс Диск)</h3>
+<input id="yandexToken" placeholder="OAuth токен Яндекс Диска">
+<button onclick="saveToken()">Сохранить токен</button>
+<button onclick="backup()">Сделать резервную копию</button>
+</div>
 
-  <div id="list"></div>
+<div id="list"></div>
 </div>
 
 <script>
-const FIXED_PAYMENT = 3000;
-
-// Сброс PIN при необходимости
+const FIXED_PAYMENT=3000;
 if(!localStorage.getItem('bjj_pin')) localStorage.setItem('bjj_pin','1234');
 
-const pinInput = document.getElementById('pinInput');
-const pinScreen = document.getElementById('pinScreen');
-const app = document.getElementById('app');
-const month = document.getElementById('month');
-const search = document.getElementById('search');
-const income = document.getElementById('income');
-const childIncome = document.getElementById('childIncome');
-const adultIncome = document.getElementById('adultIncome');
-const womenIncome = document.getElementById('womenIncome');
-const list = document.getElementById('list');
-const form = document.getElementById('form');
-const group = document.getElementById('group');
-const parent = document.getElementById('parent');
-const student = document.getElementById('student');
-const age = document.getElementById('age');
-const yandexToken = document.getElementById('yandexToken');
+const pinInput=document.getElementById('pinInput');
+const pinScreen=document.getElementById('pinScreen');
+const app=document.getElementById('app');
+const month=document.getElementById('month');
+const search=document.getElementById('search');
+const list=document.getElementById('list');
+const form=document.getElementById('form');
+const group=document.getElementById('group');
+const parent=document.getElementById('parent');
+const student=document.getElementById('student');
+const age=document.getElementById('age');
+const income=document.getElementById('income');
+const yandexToken=document.getElementById('yandexToken');
 
-let students = JSON.parse(localStorage.getItem('bjj_students')) || [];
-yandexToken.value = localStorage.getItem('bjj_yandex_token') || '';
+let students=JSON.parse(localStorage.getItem('bjj_students'))||[];
+yandexToken.value=localStorage.getItem('bjj_yandex_token')||'';
 
-function save(){ localStorage.setItem('bjj_students', JSON.stringify(students)); }
-function saveToken(){ localStorage.setItem('bjj_yandex_token', yandexToken.value); alert('Токен сохранён'); }
+function save(){localStorage.setItem('bjj_students',JSON.stringify(students));}
+function saveToken(){localStorage.setItem('bjj_yandex_token',yandexToken.value); alert('Токен сохранён');}
 
 function checkPin(){
-  if(pinInput.value === localStorage.getItem('bjj_pin')){
-    pinScreen.style.display='none';
-    app.classList.remove('hidden');
-    render();
-  } else {
-    alert('Неверный PIN');
-  }
+if(pinInput.value===localStorage.getItem('bjj_pin')){
+pinScreen.style.display='none';
+app.classList.remove('hidden');
+render();
+}else{alert('Неверный PIN');}
+}
+
+form.onsubmit=e=>{
+e.preventDefault();
+let p=students.find(x=>x.parent===parent.value);
+const child={id:Date.now(),student:student.value,age:age.value,group:group.value,payments:{}};
+if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parent.value,children:[child]});}
+save();form.reset();render();
 }
 
 function render(){
-  list.innerHTML='';
-  let total=0, child=0, adult=0, women=0;
-  const m = month.value;
-  const q = search.value.toLowerCase();
-
-  students.filter(s=>s.student.toLowerCase().includes(q)).forEach(s=>{
-    if(!s.payments) s.payments={};
-    const paid = s.payments[m] || false;
-    if(paid){
-      total+=FIXED_PAYMENT;
-      if(s.group==='Детская') child+=FIXED_PAYMENT;
-      if(s.group==='Взрослая') adult+=FIXED_PAYMENT;
-      if(s.group==='Женская') women+=FIXED_PAYMENT;
-    }
-    const card=document.createElement('div');
-    card.className='card';
-    card.innerHTML=`
-      <div class='row'><strong>${s.student}</strong> (${s.group})</div>
-      <div class='row'>Родитель: ${s.parent}</div>
-      <div class='row ${paid?'paid':'unpaid'}'>${paid?'Оплачено':'Не оплачено'}</div>
-      <div class='actions'>
-        <button onclick='togglePaid(${s.id})'>Оплата</button>
-        <button class='delete' onclick='del(${s.id})'>Удалить</button>
-      </div>`;
-    list.appendChild(card);
-  });
-  income.textContent=total;
-  childIncome.textContent=child;
-  adultIncome.textContent=adult;
-  womenIncome.textContent=women;
+list.innerHTML='';
+let total=0;
+const m=month.value;
+const q=search.value.toLowerCase();
+students.forEach(p=>{
+p.children.filter(c=>c.student.toLowerCase().includes(q)).forEach(c=>{
+if(!c.payments)c.payments={};
+const paid=c.payments[m]||false;
+if(paid) total+=FIXED_PAYMENT;
+const card=document.createElement('div');
+card.className='card';
+card.innerHTML=`<div class='row'><strong>${c.student}</strong> (${c.group})</div>
+<div class='row'>Родитель: ${p.parent}</div>
+<div class='row ${paid?'paid':'unpaid'}'>${paid?'Оплачено':'Не оплачено'}</div>
+<div class='actions'>
+<button onclick='togglePaid(${c.id})'>Оплата</button>
+<button class='delete' onclick='del(${p.id},${c.id})'>Удалить</button>
+</div>`;
+list.appendChild(card);
+});});
+income.textContent=total;
 }
 
 function togglePaid(id){
-  const s = students.find(x=>x.id===id);
-  if(!s.payments) s.payments={};
-  s.payments[month.value] = !s.payments[month.value];
-  save(); render();
+students.forEach(p=>{p.children.forEach(c=>{if(c.id===id){c.payments[month.value]=!c.payments[month.value];}});});
+save();render();
 }
 
-function del(id){
-  students = students.filter(s=>s.id!==id);
-  save(); render();
-}
-
-form.onsubmit = e => {
-  e.preventDefault();
-  students.push({ id:Date.now(), group:group.value, parent:parent.value, student:student.value, age:age.value, payments:{} });
-  save(); form.reset(); render();
+function del(pid,cid){
+students.forEach(p=>{if(p.id===pid)p.children=p.children.filter(c=>c.id!==cid);});
+students=students.filter(p=>p.children.length>0);
+save();render();
 }
 
 async function backup(){
-  const token = localStorage.getItem('bjj_yandex_token');
-  if(!token){ alert('Введите OAuth токен'); return; }
-  const data = new Blob([JSON.stringify(students)], {type:'application/json'});
-  const path = `/bjj/bjj_${new Date().toISOString().slice(0,10)}.json`;
-  const res = await fetch(`https://cloud-api.yandex.net/v1/disk/resources/upload?path=${path}&overwrite=true`,{headers:{Authorization:`OAuth ${token}`}});
-  const {href} = await res.json();
-  await fetch(href,{method:'PUT',body:data});
-  alert('Резервная копия сохранена');
+const token=localStorage.getItem('bjj_yandex_token');
+if(!token){alert('Введите OAuth токен'); return;}
+const data=new Blob([JSON.stringify(students)],{type:'application/json'});
+const path=`/bjj/bjj_${new Date().toISOString().slice(0,10)}.json`;
+const res=await fetch(`https://cloud-api.yandex.net/v1/disk/resources/upload?path=${path}&overwrite=true`,{headers:{Authorization:`OAuth ${token}`}});
+const {href}=await res.json();
+await fetch(href,{method:'PUT',body:data});
+alert('Резервная копия сохранена');
 }
 
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
-
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
 </script>
 </body>
 </html>
