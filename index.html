@@ -121,10 +121,13 @@ const menuToggle=document.getElementById('menuToggle');
 const sidebar=document.getElementById('sidebar');
 const closeSidebar=document.getElementById('closeSidebar');
 
-// Закрытие по крестику
+// Бургер всегда вешаем
+menuToggle.onclick = () => sidebar.classList.toggle('active');
+
+// крестик
 closeSidebar.onclick = () => sidebar.classList.remove('active');
 
-// Закрытие при клике вне меню
+// клик вне меню
 document.addEventListener('click', e => {
   if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
     sidebar.classList.remove('active');
@@ -136,16 +139,14 @@ function checkPin() {
   if(pinInput.value === localStorage.getItem('bjj_pin')) {
     pinScreen.style.display = 'none';
     app.classList.remove('hidden');
-    // Бургер теперь активен
-    menuToggle.style.display='inline';
-    menuToggle.onclick = () => sidebar.classList.toggle('active');
+    menuToggle.style.display='inline'; // показываем бургер
     render();
   } else {
     alert('Неверный PIN');
   }
 }
 
-// Автодополнение родителя
+// автодополнение родителя
 function showParentList(){
 const val=parentInput.value.toLowerCase();
 if(!val){parentListDiv.classList.add('hidden'); return;}
@@ -161,7 +162,7 @@ matches.forEach(m=>{
 parentListDiv.classList.remove('hidden');
 }
 
-// Добавление ребёнка
+// добавление ребёнка
 form.onsubmit=e=>{
 e.preventDefault();
 let p=students.find(x=>x.parent===parentInput.value);
@@ -170,11 +171,11 @@ if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parentInp
 save(); form.reset(); parentListDiv.classList.add('hidden'); render();
 }
 
-// Фильтр группы
+// фильтр группы
 let currentGroup='Все';
 function filterGroup(gr){currentGroup=gr; render();}
 
-// Рендер учеников
+// рендер учеников
 function render(){
 list.innerHTML=''; let total=0;
 const m=month.value;
@@ -200,6 +201,7 @@ income.textContent=total;
 function togglePaid(id){students.forEach(p=>{p.children.forEach(c=>{if(c.id===id)c.payments[month.value]=!c.payments[month.value];});}); save(); render();}
 function del(pid,cid){students.forEach(p=>{if(p.id===pid)p.children=p.children.filter(c=>c.id!==cid);}); students=students.filter(p=>p.children.length>0); save(); render();}
 
+function save(){localStorage.setItem('bjj_students',JSON.stringify(students));}
 function saveToken(){localStorage.setItem('bjj_yandex_token',yandexToken.value); alert('Токен сохранён');}
 async function backup(){
 const token=localStorage.getItem('bjj_yandex_token');
