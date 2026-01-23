@@ -7,7 +7,15 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0;padding:12px}
+body{margin:0;font-family:Arial;background:#f2f2f2}
+header{background:#111;color:#fff;padding:10px;display:flex;align-items:center}
+#menuToggle{font-size:24px;cursor:pointer;margin-right:10px}
+#sidebar{position:fixed;left:-250px;top:0;width:250px;height:100%;background:#fff;box-shadow:2px 0 6px rgba(0,0,0,.2);padding:10px;transition:0.3s;overflow:auto;z-index:1000}
+#sidebar.active{left:0}
+#sidebar h3{margin-top:10px;margin-bottom:5px}
+#sidebar ul{list-style:none;padding:0}
+#sidebar li{padding:8px;cursor:pointer;border-bottom:1px solid #ddd}
+#main{margin-left:0;transition:0.3s;padding:12px}
 input,select,button{width:100%;padding:8px;margin-top:5px;font-size:14px;border-radius:6px;border:1px solid #ccc}
 button{background:#111;color:#fff;border:none;margin-top:8px}
 .card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.1);margin-bottom:10px}
@@ -18,34 +26,54 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 .paid{color:green;font-weight:bold}
 .unpaid{color:red;font-weight:bold}
 .hidden{display:none}
+.list-dropdown{border:1px solid #ccc;background:#fff;position:absolute;max-height:120px;overflow:auto;z-index:100;}
+.list-dropdown div{padding:4px;cursor:pointer}
+.list-dropdown div:hover{background:#eee}
 </style>
 </head>
 <body>
 
+<header>
+<span id="menuToggle">&#9776;</span>
 <h2>BJJ Учёт</h2>
+</header>
 
+<div id="sidebar">
+<h3>Группы</h3>
+<ul>
+<li onclick="filterGroup('Детская')">Детская</li>
+<li onclick="filterGroup('Взрослая')">Взрослая</li>
+<li onclick="filterGroup('Женская')">Женская</li>
+<li onclick="filterGroup('Все')">Все</li>
+</ul>
+</div>
+
+<div id="main">
 <div id="pinScreen" class="card">
 <input type="password" id="pinInput" placeholder="PIN">
 <button onclick="checkPin()">Войти</button>
 </div>
 
 <div id="app" class="hidden">
+<form id="form" class="card">
+<select id="group"><option>Детская</option><option>Взрослая</option><option>Женская</option></select>
+<div style="position:relative;">
+<input id="parent" placeholder="ФИО родителя" required autocomplete="off" oninput="showParentList()">
+<div id="parentList" class="list-dropdown hidden"></div>
+</div>
+<input id="student" placeholder="ФИО ученика" required>
+<input id="age" type="number" placeholder="Возраст">
+<button>Добавить ученика</button>
+</form>
 
+<div class="card">
 <select id="month" onchange="render()">
 <option>Январь</option><option>Февраль</option><option>Март</option>
 <option>Апрель</option><option>Май</option><option>Июнь</option>
 <option>Июль</option><option>Август</option><option>Сентябрь</option>
 <option>Октябрь</option><option>Ноябрь</option><option>Декабрь</option>
 </select>
-<input id="search" placeholder="Поиск ученика" oninput="render()">
-
-<form id="form" class="card">
-<select id="group"><option>Детская</option><option>Взрослая</option><option>Женская</option></select>
-<input id="parent" placeholder="ФИО родителя" required>
-<input id="student" placeholder="ФИО ученика" required>
-<input id="age" type="number" placeholder="Возраст">
-<button>Добавить ученика</button>
-</form>
+</div>
 
 <div class="card">
 <strong>Фиксированная оплата:</strong> 3000 ₽<br>
@@ -61,6 +89,7 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 
 <div id="list"></div>
 </div>
+</div>
 
 <script>
 const FIXED_PAYMENT=3000;
@@ -70,18 +99,20 @@ const pinInput=document.getElementById('pinInput');
 const pinScreen=document.getElementById('pinScreen');
 const app=document.getElementById('app');
 const month=document.getElementById('month');
-const search=document.getElementById('search');
 const list=document.getElementById('list');
 const form=document.getElementById('form');
 const group=document.getElementById('group');
-const parent=document.getElementById('parent');
-const student=document.getElementById('student');
-const age=document.getElementById('age');
+const parentInput=document.getElementById('parent');
+const parentListDiv=document.getElementById('parentList');
+const studentInput=document.getElementById('student');
+const ageInput=document.getElementById('age');
 const income=document.getElementById('income');
 const yandexToken=document.getElementById('yandexToken');
 
 let students=JSON.parse(localStorage.getItem('bjj_students'))||[];
 yandexToken.value=localStorage.getItem('bjj_yandex_token')||'';
+
+document.getElementById('menuToggle').onclick=()=>{document.getElementById('sidebar').classList.toggle('active');}
 
 function save(){localStorage.setItem('bjj_students',JSON.stringify(students));}
 function saveToken(){localStorage.setItem('bjj_yandex_token',yandexToken.value); alert('Токен сохранён');}
@@ -94,24 +125,35 @@ render();
 }else{alert('Неверный PIN');}
 }
 
-form.onsubmit=e=>{
-e.preventDefault();
-let p=students.find(x=>x.parent===parent.value);
-const child={id:Date.now(),student:student.value,age:age.value,group:group.value,payments:{}};
-if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parent.value,children:[child]});}
-save();form.reset();render();
+// Автодополнение родителя
+function showParentList(){
+const val=parentInput.value.toLowerCase();
+if(!val){parentListDiv.classList.add('hidden'); return;}
+const matches=students.filter(p=>p.parent.toLowerCase().includes(val)).map(p=>p.parent);
+if(matches.length==0){parentListDiv.classList.add('hidden'); return;}
+parentListDiv.innerHTML='';
+matches.forEach(m=>{const d=document.createElement('div'); d.textContent=m; d.onclick=()=>{parentInput.value=m; parentListDiv.classList.add('hidden');}; parentListDiv.appendChild(d);});
+parentListDiv.classList.remove('hidden');
 }
 
+form.onsubmit=e=>{
+e.preventDefault();
+let p=students.find(x=>x.parent===parentInput.value);
+const child={id:Date.now(),student:studentInput.value,age:ageInput.value,group:group.value,payments:{}};
+if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parentInput.value,children:[child]});}
+save();form.reset();parentListDiv.classList.add('hidden'); render();
+}
+
+let currentGroup='Все';
+function filterGroup(gr){currentGroup=gr; render();}
+
 function render(){
-list.innerHTML='';
-let total=0;
-const m=month.value;
-const q=search.value.toLowerCase();
+list.innerHTML=''; let total=0;
+const m=month.value; 
 students.forEach(p=>{
-p.children.filter(c=>c.student.toLowerCase().includes(q)).forEach(c=>{
+p.children.filter(c=> (currentGroup=='Все'||c.group==currentGroup) ).forEach(c=>{
 if(!c.payments)c.payments={};
-const paid=c.payments[m]||false;
-if(paid) total+=FIXED_PAYMENT;
+const paid=c.payments[m]||false; if(paid) total+=FIXED_PAYMENT;
 const card=document.createElement('div');
 card.className='card';
 card.innerHTML=`<div class='row'><strong>${c.student}</strong> (${c.group})</div>
@@ -126,16 +168,8 @@ list.appendChild(card);
 income.textContent=total;
 }
 
-function togglePaid(id){
-students.forEach(p=>{p.children.forEach(c=>{if(c.id===id){c.payments[month.value]=!c.payments[month.value];}});});
-save();render();
-}
-
-function del(pid,cid){
-students.forEach(p=>{if(p.id===pid)p.children=p.children.filter(c=>c.id!==cid);});
-students=students.filter(p=>p.children.length>0);
-save();render();
-}
+function togglePaid(id){students.forEach(p=>{p.children.forEach(c=>{if(c.id===id){c.payments[month.value]=!c.payments[month.value];}});}); save(); render();}
+function del(pid,cid){students.forEach(p=>{if(p.id===pid)p.children=p.children.filter(c=>c.id!==cid);}); students=students.filter(p=>p.children.length>0); save(); render();}
 
 async function backup(){
 const token=localStorage.getItem('bjj_yandex_token');
@@ -150,5 +184,6 @@ alert('Резервная копия сохранена');
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
 </script>
+
 </body>
 </html>
