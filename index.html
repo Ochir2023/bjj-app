@@ -33,11 +33,13 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 </head>
 <body>
 
+<!-- HEADER -->
 <header>
 <span id="menuToggle">&#9776;</span>
 <h2>BJJ Учёт</h2>
 </header>
 
+<!-- SIDEBAR MENU -->
 <div id="sidebar">
 <h3>Группы</h3>
 <ul>
@@ -48,13 +50,18 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 </ul>
 </div>
 
+<!-- MAIN -->
 <div id="main">
+
+<!-- PAGE 1: PIN ВВОД -->
 <div id="pinScreen" class="card">
-<input type="password" id="pinInput" placeholder="PIN">
+<input type="password" id="pinInput" placeholder="Введите PIN">
 <button onclick="checkPin()">Войти</button>
 </div>
 
+<!-- PAGE 2: ФОРМА И СПИСОК -->
 <div id="app" class="hidden">
+
 <form id="form" class="card">
 <select id="group"><option>Детская</option><option>Взрослая</option><option>Женская</option></select>
 <div style="position:relative;">
@@ -114,9 +121,7 @@ yandexToken.value=localStorage.getItem('bjj_yandex_token')||'';
 
 document.getElementById('menuToggle').onclick=()=>{document.getElementById('sidebar').classList.toggle('active');}
 
-function save(){localStorage.setItem('bjj_students',JSON.stringify(students));}
-function saveToken(){localStorage.setItem('bjj_yandex_token',yandexToken.value); alert('Токен сохранён');}
-
+// PIN
 function checkPin(){
 if(pinInput.value===localStorage.getItem('bjj_pin')){
 pinScreen.style.display='none';
@@ -136,24 +141,28 @@ matches.forEach(m=>{const d=document.createElement('div'); d.textContent=m; d.on
 parentListDiv.classList.remove('hidden');
 }
 
+// Сохраняем и добавляем ребенка
 form.onsubmit=e=>{
 e.preventDefault();
 let p=students.find(x=>x.parent===parentInput.value);
 const child={id:Date.now(),student:studentInput.value,age:ageInput.value,group:group.value,payments:{}};
 if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parentInput.value,children:[child]});}
-save();form.reset();parentListDiv.classList.add('hidden'); render();
+save(); form.reset(); parentListDiv.classList.add('hidden'); render();
 }
 
+// Фильтр по группе
 let currentGroup='Все';
 function filterGroup(gr){currentGroup=gr; render();}
 
+// Рендер списка учеников
 function render(){
 list.innerHTML=''; let total=0;
-const m=month.value; 
+const m=month.value;
 students.forEach(p=>{
-p.children.filter(c=> (currentGroup=='Все'||c.group==currentGroup) ).forEach(c=>{
+p.children.filter(c=>currentGroup==='Все'||c.group===currentGroup).forEach(c=>{
 if(!c.payments)c.payments={};
-const paid=c.payments[m]||false; if(paid) total+=FIXED_PAYMENT;
+const paid=c.payments[m]||false;
+if(paid) total+=FIXED_PAYMENT;
 const card=document.createElement('div');
 card.className='card';
 card.innerHTML=`<div class='row'><strong>${c.student}</strong> (${c.group})</div>
@@ -168,9 +177,10 @@ list.appendChild(card);
 income.textContent=total;
 }
 
-function togglePaid(id){students.forEach(p=>{p.children.forEach(c=>{if(c.id===id){c.payments[month.value]=!c.payments[month.value];}});}); save(); render();}
+function togglePaid(id){students.forEach(p=>{p.children.forEach(c=>{if(c.id===id)c.payments[month.value]=!c.payments[month.value];});}); save(); render();}
 function del(pid,cid){students.forEach(p=>{if(p.id===pid)p.children=p.children.filter(c=>c.id!==cid);}); students=students.filter(p=>p.children.length>0); save(); render();}
 
+function saveToken(){localStorage.setItem('bjj_yandex_token',yandexToken.value); alert('Токен сохранён');}
 async function backup(){
 const token=localStorage.getItem('bjj_yandex_token');
 if(!token){alert('Введите OAuth токен'); return;}
