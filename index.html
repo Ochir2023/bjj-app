@@ -35,13 +35,11 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 </head>
 <body>
 
-<!-- HEADER -->
 <header>
 <span id="menuToggle">&#9776;</span>
 <h2>BJJ Учёт</h2>
 </header>
 
-<!-- SIDEBAR MENU -->
 <div id="sidebar">
 <span id="closeSidebar">&#10005;</span>
 <h3>Группы</h3>
@@ -53,16 +51,13 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 </ul>
 </div>
 
-<!-- MAIN -->
 <div id="main">
 
-<!-- PAGE 1: PIN -->
 <div id="pinScreen" class="card">
 <input type="password" id="pinInput" placeholder="Введите PIN">
 <button onclick="checkPin()">Войти</button>
 </div>
 
-<!-- PAGE 2: ФОРМА И СПИСОК -->
 <div id="app" class="hidden">
 
 <form id="form" class="card">
@@ -125,20 +120,11 @@ yandexToken.value=localStorage.getItem('bjj_yandex_token')||'';
 const menuToggle=document.getElementById('menuToggle');
 const sidebar=document.getElementById('sidebar');
 const closeSidebar=document.getElementById('closeSidebar');
-
-// Бургер только после входа
 menuToggle.style.display='none';
 
 closeSidebar.onclick=()=>{sidebar.classList.remove('active');}
+document.addEventListener('click',e=>{if(!sidebar.contains(e.target)&&!menuToggle.contains(e.target)){sidebar.classList.remove('active');}});
 
-// Закрытие при клике вне меню
-document.addEventListener('click',e=>{
-if(!sidebar.contains(e.target)&&!menuToggle.contains(e.target)){
-sidebar.classList.remove('active');
-}
-});
-
-// PIN
 function checkPin(){
 if(pinInput.value===localStorage.getItem('bjj_pin')){
 pinScreen.style.display='none';
@@ -148,7 +134,6 @@ render();
 }else{alert('Неверный PIN');}
 }
 
-// Автодополнение родителя
 function showParentList(){
 const val=parentInput.value.toLowerCase();
 if(!val){parentListDiv.classList.add('hidden'); return;}
@@ -159,7 +144,6 @@ matches.forEach(m=>{const d=document.createElement('div'); d.textContent=m; d.on
 parentListDiv.classList.remove('hidden');
 }
 
-// Добавление ребёнка
 form.onsubmit=e=>{
 e.preventDefault();
 let p=students.find(x=>x.parent===parentInput.value);
@@ -168,11 +152,207 @@ if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parentInp
 save(); form.reset(); parentListDiv.classList.add('hidden'); render();
 }
 
-// Фильтр группы
 let currentGroup='Все';
 function filterGroup(gr){currentGroup=gr; render();}
 
-// Рендер учеников
+function render(){
+list.innerHTML=''; let total=0;
+const m=month.value;
+students.forEach(p=>{
+p.children.filter(c=>currentGroup==='Все'||c.group===currentGroup).forEach(c=>{
+if(!c.payments)c.payments={};
+const paid=c.payments[m]||false;
+if(paid) total+=FIXED_PAYMENT;
+const card=document.createElement('div');
+card.className='card';
+card.innerHTML=`<div class='row'><strong>${c.student}</strong> (${c.group})</div>
+<div class='row'>Родитель: ${p.parent}</div>
+<div class='row ${paid?'paid':'unpaid'}'>${paid?'Оплачено':'Не оплачено'}</div>
+<div class='actions'>
+<button onclick='togglePaid(${c.id})'>Оплата</button>
+<button class='delete' onclick='del(${p.id},${c.id})'>Удалить</button>
+</div>`;
+list.appendChild(card);
+});});
+income.textContent=total;
+}
+
+function togglePaid(id){students.forEach(p=>{p.children.forEach(c=>{if(c.id===id)c.payments[month.value]=!c.payments[month.value];});}); save(); render();}
+function del(pid,cid){students.forEach(p=>{if(p.id===pid)p.children=p.children.filter(c=>c.id!==cid);}); students=students.filter(p=>p.children.length>0); save(); render();}
+
+function saveToken(){localStorage.setItem('bjj_yandex_token',yandexToken.value); alert('Токен сохранён');}
+async function backup(){
+const token=localStorage.getItem('bjj_yandex_token');
+if(!token){alert('Введите OAuth токен'); return;}
+const data=new Blob([JSON.stringify(students)],{type:'application/json'});
+const path=`/bjj/bjj_${new Date().toISOString().slice(0,10)}.json`;
+const res=await fetch(`https://cloud-api.yandex.net/v1/disk/resources/upload?path=${path}&overwrite=true`,{headers:{Authorization:`OAuth ${token}`}});
+const {href}=await res.json();
+await fetch(href,{method:'PUT',body:data});
+alert('Резервная копия сохранена');
+}
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BJJ Учёт</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<style>
+body{margin:0;font-family:Arial;background:#f2f2f2}
+header{background:#111;color:#fff;padding:10px;display:flex;align-items:center}
+#menuToggle{font-size:24px;cursor:pointer;margin-right:10px;display:none;}
+#sidebar{position:fixed;left:-250px;top:0;width:250px;height:100%;background:#fff;box-shadow:2px 0 6px rgba(0,0,0,.2);padding:10px;transition:0.3s;overflow:auto;z-index:1000}
+#sidebar.active{left:0}
+#sidebar h3{margin-top:10px;margin-bottom:5px}
+#sidebar ul{list-style:none;padding:0}
+#sidebar li{padding:8px;cursor:pointer;border-bottom:1px solid #ddd}
+#sidebar li:hover{background:#eee;}
+#main{margin-left:0;transition:0.3s;padding:12px}
+input,select,button{width:100%;padding:8px;margin-top:5px;font-size:14px;border-radius:6px;border:1px solid #ccc}
+button{background:#111;color:#fff;border:none;margin-top:8px}
+.card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.1);margin-bottom:10px}
+.row{font-size:14px;margin:2px 0}
+.actions{display:flex;gap:4px;margin-top:6px}
+.actions button{flex:1}
+.delete{background:#b00020}
+.paid{color:green;font-weight:bold}
+.unpaid{color:red;font-weight:bold}
+.hidden{display:none}
+.list-dropdown{border:1px solid #ccc;background:#fff;position:absolute;max-height:120px;overflow:auto;z-index:100;}
+.list-dropdown div{padding:4px;cursor:pointer}
+.list-dropdown div:hover{background:#eee}
+#closeSidebar{cursor:pointer;font-size:18px;float:right;color:#111;}
+</style>
+</head>
+<body>
+
+<header>
+<span id="menuToggle">&#9776;</span>
+<h2>BJJ Учёт</h2>
+</header>
+
+<div id="sidebar">
+<span id="closeSidebar">&#10005;</span>
+<h3>Группы</h3>
+<ul>
+<li onclick="filterGroup('Детская')">Детская</li>
+<li onclick="filterGroup('Взрослая')">Взрослая</li>
+<li onclick="filterGroup('Женская')">Женская</li>
+<li onclick="filterGroup('Все')">Все</li>
+</ul>
+</div>
+
+<div id="main">
+
+<div id="pinScreen" class="card">
+<input type="password" id="pinInput" placeholder="Введите PIN">
+<button onclick="checkPin()">Войти</button>
+</div>
+
+<div id="app" class="hidden">
+
+<form id="form" class="card">
+<select id="group"><option>Детская</option><option>Взрослая</option><option>Женская</option></select>
+<div style="position:relative;">
+<input id="parent" placeholder="ФИО родителя" required autocomplete="off" oninput="showParentList()">
+<div id="parentList" class="list-dropdown hidden"></div>
+</div>
+<input id="student" placeholder="ФИО ученика" required>
+<input id="age" type="number" placeholder="Возраст">
+<button>Добавить ученика</button>
+</form>
+
+<div class="card">
+<select id="month" onchange="render()">
+<option>Январь</option><option>Февраль</option><option>Март</option>
+<option>Апрель</option><option>Май</option><option>Июнь</option>
+<option>Июль</option><option>Август</option><option>Сентябрь</option>
+<option>Октябрь</option><option>Ноябрь</option><option>Декабрь</option>
+</select>
+</div>
+
+<div class="card">
+<strong>Фиксированная оплата:</strong> 3000 ₽<br>
+<strong>Доход за месяц:</strong> <span id="income">0</span>
+</div>
+
+<div class="card">
+<h3>Резервная копия (Яндекс Диск)</h3>
+<input id="yandexToken" placeholder="OAuth токен Яндекс Диска">
+<button onclick="saveToken()">Сохранить токен</button>
+<button onclick="backup()">Сделать резервную копию</button>
+</div>
+
+<div id="list"></div>
+</div>
+</div>
+
+<script>
+const FIXED_PAYMENT=3000;
+if(!localStorage.getItem('bjj_pin')) localStorage.setItem('bjj_pin','1234');
+
+const pinInput=document.getElementById('pinInput');
+const pinScreen=document.getElementById('pinScreen');
+const app=document.getElementById('app');
+const month=document.getElementById('month');
+const list=document.getElementById('list');
+const form=document.getElementById('form');
+const group=document.getElementById('group');
+const parentInput=document.getElementById('parent');
+const parentListDiv=document.getElementById('parentList');
+const studentInput=document.getElementById('student');
+const ageInput=document.getElementById('age');
+const income=document.getElementById('income');
+const yandexToken=document.getElementById('yandexToken');
+
+let students=JSON.parse(localStorage.getItem('bjj_students'))||[];
+yandexToken.value=localStorage.getItem('bjj_yandex_token')||'';
+
+const menuToggle=document.getElementById('menuToggle');
+const sidebar=document.getElementById('sidebar');
+const closeSidebar=document.getElementById('closeSidebar');
+menuToggle.style.display='none';
+
+closeSidebar.onclick=()=>{sidebar.classList.remove('active');}
+document.addEventListener('click',e=>{if(!sidebar.contains(e.target)&&!menuToggle.contains(e.target)){sidebar.classList.remove('active');}});
+
+function checkPin(){
+if(pinInput.value===localStorage.getItem('bjj_pin')){
+pinScreen.style.display='none';
+app.classList.remove('hidden');
+menuToggle.style.display='inline';
+render();
+}else{alert('Неверный PIN');}
+}
+
+function showParentList(){
+const val=parentInput.value.toLowerCase();
+if(!val){parentListDiv.classList.add('hidden'); return;}
+const matches=students.filter(p=>p.parent.toLowerCase().includes(val)).map(p=>p.parent);
+if(matches.length==0){parentListDiv.classList.add('hidden'); return;}
+parentListDiv.innerHTML='';
+matches.forEach(m=>{const d=document.createElement('div'); d.textContent=m; d.onclick=()=>{parentInput.value=m; parentListDiv.classList.add('hidden');}; parentListDiv.appendChild(d);});
+parentListDiv.classList.remove('hidden');
+}
+
+form.onsubmit=e=>{
+e.preventDefault();
+let p=students.find(x=>x.parent===parentInput.value);
+const child={id:Date.now(),student:studentInput.value,age:ageInput.value,group:group.value,payments:{}};
+if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parentInput.value,children:[child]});}
+save(); form.reset(); parentListDiv.classList.add('hidden'); render();
+}
+
+let currentGroup='Все';
+function filterGroup(gr){currentGroup=gr; render();}
+
 function render(){
 list.innerHTML=''; let total=0;
 const m=month.value;
