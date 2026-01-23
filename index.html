@@ -9,12 +9,13 @@
 <style>
 body{margin:0;font-family:Arial;background:#f2f2f2}
 header{background:#111;color:#fff;padding:10px;display:flex;align-items:center}
-#menuToggle{font-size:24px;cursor:pointer;margin-right:10px}
+#menuToggle{font-size:24px;cursor:pointer;margin-right:10px;display:none;}
 #sidebar{position:fixed;left:-250px;top:0;width:250px;height:100%;background:#fff;box-shadow:2px 0 6px rgba(0,0,0,.2);padding:10px;transition:0.3s;overflow:auto;z-index:1000}
 #sidebar.active{left:0}
 #sidebar h3{margin-top:10px;margin-bottom:5px}
 #sidebar ul{list-style:none;padding:0}
 #sidebar li{padding:8px;cursor:pointer;border-bottom:1px solid #ddd}
+#sidebar li:hover{background:#eee;}
 #main{margin-left:0;transition:0.3s;padding:12px}
 input,select,button{width:100%;padding:8px;margin-top:5px;font-size:14px;border-radius:6px;border:1px solid #ccc}
 button{background:#111;color:#fff;border:none;margin-top:8px}
@@ -29,6 +30,7 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 .list-dropdown{border:1px solid #ccc;background:#fff;position:absolute;max-height:120px;overflow:auto;z-index:100;}
 .list-dropdown div{padding:4px;cursor:pointer}
 .list-dropdown div:hover{background:#eee}
+#closeSidebar{cursor:pointer;font-size:18px;float:right;color:#111;}
 </style>
 </head>
 <body>
@@ -41,6 +43,7 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 
 <!-- SIDEBAR MENU -->
 <div id="sidebar">
+<span id="closeSidebar">&#10005;</span>
 <h3>Группы</h3>
 <ul>
 <li onclick="filterGroup('Детская')">Детская</li>
@@ -53,7 +56,7 @@ button{background:#111;color:#fff;border:none;margin-top:8px}
 <!-- MAIN -->
 <div id="main">
 
-<!-- PAGE 1: PIN ВВОД -->
+<!-- PAGE 1: PIN -->
 <div id="pinScreen" class="card">
 <input type="password" id="pinInput" placeholder="Введите PIN">
 <button onclick="checkPin()">Войти</button>
@@ -119,13 +122,28 @@ const yandexToken=document.getElementById('yandexToken');
 let students=JSON.parse(localStorage.getItem('bjj_students'))||[];
 yandexToken.value=localStorage.getItem('bjj_yandex_token')||'';
 
-document.getElementById('menuToggle').onclick=()=>{document.getElementById('sidebar').classList.toggle('active');}
+const menuToggle=document.getElementById('menuToggle');
+const sidebar=document.getElementById('sidebar');
+const closeSidebar=document.getElementById('closeSidebar');
+
+// Бургер только после входа
+menuToggle.style.display='none';
+
+closeSidebar.onclick=()=>{sidebar.classList.remove('active');}
+
+// Закрытие при клике вне меню
+document.addEventListener('click',e=>{
+if(!sidebar.contains(e.target)&&!menuToggle.contains(e.target)){
+sidebar.classList.remove('active');
+}
+});
 
 // PIN
 function checkPin(){
 if(pinInput.value===localStorage.getItem('bjj_pin')){
 pinScreen.style.display='none';
 app.classList.remove('hidden');
+menuToggle.style.display='inline';
 render();
 }else{alert('Неверный PIN');}
 }
@@ -141,7 +159,7 @@ matches.forEach(m=>{const d=document.createElement('div'); d.textContent=m; d.on
 parentListDiv.classList.remove('hidden');
 }
 
-// Сохраняем и добавляем ребенка
+// Добавление ребёнка
 form.onsubmit=e=>{
 e.preventDefault();
 let p=students.find(x=>x.parent===parentInput.value);
@@ -150,11 +168,11 @@ if(p){p.children.push(child);}else{students.push({id:Date.now(),parent:parentInp
 save(); form.reset(); parentListDiv.classList.add('hidden'); render();
 }
 
-// Фильтр по группе
+// Фильтр группы
 let currentGroup='Все';
 function filterGroup(gr){currentGroup=gr; render();}
 
-// Рендер списка учеников
+// Рендер учеников
 function render(){
 list.innerHTML=''; let total=0;
 const m=month.value;
