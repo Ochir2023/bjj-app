@@ -39,6 +39,17 @@
 
 <div id="list"></div>
 
+<!-- Модальное окно -->
+<div id="modal" class="hidden">
+  <div class="modal-content">
+    <p id="modal-text"></p>
+    <div class="modal-buttons">
+      <button id="modal-ok">Оплатил / Да</button>
+      <button id="modal-cancel">Не оплачено / Отмена</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 <script>
 if('serviceWorker' in navigator){
