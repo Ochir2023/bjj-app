@@ -90,8 +90,8 @@ function render(){
     d.innerHTML = `<b>${s.student}</b><br>
       Родитель: ${s.parent} (${s.phone})<br>
       <span class="${paidThisMonth?'paid':'unpaid'}">${paidThisMonth?'Оплачено':'Не оплачено'}</span><br><br>
-      <button onclick="confirmPay(${i})">Оплата</button>
-      <button onclick="confirmRemove(${i})" style="background:#b00020">Удалить</button>`;
+      button class="pay-btn" data-index="${i}">Оплата</button>
+      <button class="remove-btn" data-index="${i}" style="background:#b00020">Удалить</button>`;
     list.appendChild(d);
   });
 
@@ -99,6 +99,19 @@ function render(){
     const o = document.createElement('option');
     o.value = p;
     parentsList.appendChild(o);
+  });
+  parentsSet.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p;
+    parentsList.appendChild(o);
+  });
+
+  // Привязываем события после рендера
+  document.querySelectorAll('.pay-btn').forEach(btn => {
+    btn.addEventListener('click', () => confirmPay(Number(btn.dataset.index)));
+  });
+  document.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => confirmRemove(Number(btn.dataset.index)));
   });
 }
 
