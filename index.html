@@ -4,84 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BJJ Учёт</title>
-
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
 <meta name="theme-color" content="#111">
-
-<style>
-body{margin:0;font-family:Arial;background:#f2f2f2}
-
-/* HEADER */
-header{
-  background:#111;
-  color:#fff;
-  display:flex;
-  align-items:flex-end;
-  padding:8px;
-}
-.tabs{
-  display:flex;
-  gap:6px;
-  flex:1;
-}
-.tab{
-  padding:8px 10px;
-  font-size:14px;
-  cursor:pointer;
-  background:#222;
-  border-radius:8px 8px 0 0;
-  white-space:nowrap;
-}
-.tab.active{
-  background:#fff;
-  color:#111;
-  font-weight:bold;
-}
-.plus{
-  width:44px;
-  height:44px;
-  margin-left:8px;
-  font-size:26px;
-  background:#111;
-  color:#fff;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  flex-shrink:0;
-}
-
-/* CONTENT */
-.card{
-  background:#fff;
-  margin:12px;
-  padding:14px;
-  border-radius:12px;
-  box-shadow:0 2px 8px rgba(0,0,0,.1)
-}
-input,button{
-  width:100%;
-  padding:10px;
-  margin-top:8px;
-  font-size:16px;
-  border-radius:8px;
-  border:1px solid #ccc
-}
-button{background:#111;color:#fff;border:none}
-.hidden{display:none}
-.paid{color:green;font-weight:bold}
-.unpaid{color:red;font-weight:bold}
-</style>
 </head>
-
 <body>
 
 <!-- PIN -->
 <div id="pinScreen" class="card">
   <h3>Введите PIN</h3>
   <input type="password" id="pinInput">
-  <button onclick="login()">Войти</button>
+  <button id="loginBtn">Войти</button>
 </div>
 
 <!-- APP -->
@@ -89,11 +22,11 @@ button{background:#111;color:#fff;border:none}
 
 <header>
   <div class="tabs">
-    <div class="tab active" onclick="setGroup('Детская',this)">Детская</div>
-    <div class="tab" onclick="setGroup('Взрослая',this)">Взрослая</div>
-    <div class="tab" onclick="setGroup('Женская',this)">Женская</div>
+    <div class="tab active" data-group="Детская">Детская</div>
+    <div class="tab" data-group="Взрослая">Взрослая</div>
+    <div class="tab" data-group="Женская">Женская</div>
   </div>
-  <div class="plus" onclick="toggleForm()">＋</div>
+  <div class="plus" id="toggleForm">＋</div>
 </header>
 
 <!-- FORM -->
@@ -101,111 +34,18 @@ button{background:#111;color:#fff;border:none}
   <input id="parentInput" placeholder="ФИО родителя" list="parentsList">
   <datalist id="parentsList"></datalist>
   <input id="studentInput" placeholder="ФИО ученика">
-  <button onclick="addStudent()">Добавить</button>
+  <button id="addStudentBtn">Добавить</button>
 </div>
 
 <div id="list"></div>
 
-</div>
-
+<script src="app.js"></script>
 <script>
-if(!localStorage.pin) localStorage.pin='1234';
-
-let currentGroup='Детская';
-let data=JSON.parse(localStorage.getItem('bjj_data')||'[]');
-
-const pinScreen=document.getElementById('pinScreen');
-const app=document.getElementById('app');
-const formBlock=document.getElementById('formBlock');
-const parentInput=document.getElementById('parentInput');
-const studentInput=document.getElementById('studentInput');
-const parentsList=document.getElementById('parentsList');
-const list=document.getElementById('list');
-const tabs=document.querySelectorAll('.tab');
-
-function login(){
-  if(pinInput.value===localStorage.pin){
-    pinScreen.classList.add('hidden');
-    app.classList.remove('hidden');
-    render();
-  } else alert('Неверный PIN');
-}
-
-function setGroup(g,el){
-  currentGroup=g;
-  tabs.forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  render();
-}
-
-function toggleForm(){
-  formBlock.classList.toggle('hidden');
-}
-
-function save(){
-  localStorage.setItem('bjj_data',JSON.stringify(data));
-}
-
-function addStudent(){
-  if(!parentInput.value||!studentInput.value){
-    alert('Заполните поля');
-    return;
-  }
-  data.push({
-    parent:parentInput.value.trim(),
-    student:studentInput.value.trim(),
-    group:currentGroup,
-    paid:false
-  });
-  parentInput.value='';
-  studentInput.value='';
-  save();
-  render();
-}
-
-function render(){
-  list.innerHTML='';
-  parentsList.innerHTML='';
-  const parentsSet=new Set();
-
-  data.filter(s=>s.group===currentGroup).forEach((s,i)=>{
-    parentsSet.add(s.parent);
-    const d=document.createElement('div');
-    d.className='card';
-    d.innerHTML=`
-      <b>${s.student}</b><br>
-      Родитель: ${s.parent}<br>
-      <span class="${s.paid?'paid':'unpaid'}">
-        ${s.paid?'Оплачено':'Не оплачено'}
-      </span><br><br>
-      <button onclick="togglePay(${i})">Оплата</button>
-      <button onclick="remove(${i})" style="background:#b00020">Удалить</button>
-    `;
-    list.appendChild(d);
-  });
-
-  parentsSet.forEach(p=>{
-    const o=document.createElement('option');
-    o.value=p;
-    parentsList.appendChild(o);
-  });
-}
-
-function togglePay(i){
-  data[i].paid=!data[i].paid;
-  save();render();
-}
-function remove(i){
-  data.splice(i,1);
-  save();render();
-}
-
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js');
+  navigator.serviceWorker.register('sw.js')
+  .then(()=>console.log('Service Worker зарегистрирован'))
+  .catch(console.error);
 }
-</script>
-<script>
-navigator.serviceWorker.register('service-worker.js');
 </script>
 </body>
 </html>
