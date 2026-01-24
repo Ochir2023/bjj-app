@@ -102,7 +102,7 @@ function renderPayments(){
     if(paid) totals[s.group] += FIXED_PAYMENT;
     const d=document.createElement('div');
     d.className='card';
-    d.innerHTML=`<b>${s.student}</b> (${s.group})<br>Родитель: ${s.parent}<br>
+    d.innerHTML=`<b>${s.student}</b> (${s.group})<br>Родитель: ${s.parent} (${s.phone})<br>
       <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span>
       <button onclick="confirmPay(${data.indexOf(s)})">Оплатить</button>`;
     list.appendChild(d);
@@ -123,14 +123,14 @@ function confirmPay(i){
   currentIndex=i;
   const s=data[i];
   modalText.textContent=`Подтвердите оплату ученика: ${s.student} (${s.group})`;
-  modal.classList.remove('hidden');
+  modal.classList.remove('hidden'); // появляется только при нажатии кнопки
 }
 
 function confirmRemove(i){
   currentAction='remove';
   currentIndex=i;
   modalText.textContent=`Удалить ученика: ${data[i].student}?`;
-  modal.classList.remove('hidden');
+  modal.classList.remove('hidden'); // появляется только при нажатии кнопки
 }
 
 // Кнопки модалки
