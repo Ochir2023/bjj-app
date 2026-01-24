@@ -49,18 +49,44 @@ tabs.forEach(tab=>{
 });
 
 // === Показ/скрытие формы ===
-toggleFormBtn.addEventListener('click', ()=> formBlock.classList.toggle('hidden'));
+toggleFormBtn.addEventListener('click', ()=>{
+  formBlock.classList.toggle('hidden');
+  adjustFormFields();
+});
+
+// === Адаптация полей формы ===
+function adjustFormFields(){
+  if(currentGroup === "Детская"){
+    parentInput.parentElement.style.display = 'block';
+    phoneInput.parentElement.style.display = 'block';
+    studentInput.placeholder = "ФИО ученика";
+  } else {
+    parentInput.parentElement.style.display = 'none';
+    studentInput.placeholder = "ФИО спортсмена";
+    phoneInput.parentElement.style.display = 'block';
+  }
+}
 
 // === Добавление ученика ===
 addBtn.addEventListener('click', ()=>{
-  if(!parentInput.value || !studentInput.value){ alert('Заполните поля'); return; }
-  data.push({
-    parent: parentInput.value.trim(),
+  if(currentGroup === "Детская" && (!parentInput.value || !studentInput.value)){
+    alert('Заполните ФИО родителей и ФИО ученика');
+    return;
+  }
+  if(currentGroup !== "Детская" && !studentInput.value){
+    alert('Заполните ФИО спортсмена');
+    return;
+  }
+
+  const newStudent = {
+    group: currentGroup,
+    parent: currentGroup==="Детская"? parentInput.value.trim() : "",
     phone: phoneInput.value.trim(),
     student: studentInput.value.trim(),
-    group: currentGroup,
-    payments: {} // по месяцам
-  });
+    payments: {}
+  };
+  data.push(newStudent);
+
   parentInput.value=''; phoneInput.value=''; studentInput.value='';
   save();
   render();
@@ -83,14 +109,15 @@ function render(){
   }
 
   data.filter(s=>s.group === currentGroup).forEach((s,i)=>{
-    parentsSet.add(s.parent);
+    if(s.parent) parentsSet.add(s.parent);
     const paidThisMonth = s.payments[months[new Date().getMonth()]] || false;
+
     const d = document.createElement('div');
     d.className = 'card';
     d.innerHTML = `<b>${s.student}</b><br>
-      Родитель: ${s.parent} (${s.phone})<br>
+      ${s.parent? `Родитель: ${s.parent} (` : ''}${s.phone}${s.parent?')':''}<br>
       <span class="${paidThisMonth?'paid':'unpaid'}">${paidThisMonth?'Оплачено':'Не оплачено'}</span><br><br>
-      button class="pay-btn" data-index="${i}">Оплата</button>
+      <button class="pay-btn" data-index="${i}">Оплата</button>
       <button class="remove-btn" data-index="${i}" style="background:#b00020">Удалить</button>`;
     list.appendChild(d);
   });
@@ -100,18 +127,13 @@ function render(){
     o.value = p;
     parentsList.appendChild(o);
   });
-  parentsSet.forEach(p=>{
-    const o = document.createElement('option');
-    o.value = p;
-    parentsList.appendChild(o);
-  });
 
-  // Привязываем события после рендера
+  // Привязываем события кнопок
   document.querySelectorAll('.pay-btn').forEach(btn => {
-    btn.addEventListener('click', () => confirmPay(Number(btn.dataset.index)));
+    btn.addEventListener('click', ()=> confirmPay(Number(btn.dataset.index)));
   });
   document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => confirmRemove(Number(btn.dataset.index)));
+    btn.addEventListener('click', ()=> confirmRemove(Number(btn.dataset.index)));
   });
 }
 
@@ -127,7 +149,7 @@ function renderPayments(){
     const d = document.createElement('div');
     d.className = 'card';
     d.innerHTML = `<b>${s.student}</b> (${s.group})<br>
-      Родитель: ${s.parent} (${s.phone})<br>
+      ${s.parent? `Родитель: ${s.parent} (` : ''}${s.phone}${s.parent?')':''}<br>
       <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span>
       <button onclick="confirmPay(${data.indexOf(s)})">Оплатить</button>`;
     list.appendChild(d);
@@ -158,12 +180,11 @@ function confirmRemove(i){
   modal.classList.remove('hidden');
 }
 
-// === Кнопки модалки ===
 modalOk.addEventListener('click', ()=>{
-  if(currentAction === 'pay'){
+  if(currentAction==='pay'){
     const month = months[new Date().getMonth()];
     data[currentIndex].payments[month] = true;
-  } else if(currentAction === 'remove'){
+  } else if(currentAction==='remove'){
     data.splice(currentIndex,1);
   }
   save();
@@ -174,7 +195,7 @@ modalOk.addEventListener('click', ()=>{
 });
 
 modalCancel.addEventListener('click', ()=>{
-  if(currentAction === 'pay'){
+  if(currentAction==='pay'){
     const month = months[new Date().getMonth()];
     data[currentIndex].payments[month] = false;
     save();
@@ -185,6 +206,6 @@ modalCancel.addEventListener('click', ()=>{
   currentIndex = null;
 });
 
-// === Делаем функции глобальными для onclick в HTML ===
+// === Глобальные функции для HTML ===
 window.confirmPay = confirmPay;
 window.confirmRemove = confirmRemove;
