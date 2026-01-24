@@ -9,47 +9,13 @@
 <meta name="theme-color" content="#111">
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f2f2f2;
-}
-header{
-  background:#111;
-  color:#fff;
-  padding:12px 16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.plus{
-  font-size:26px;
-  cursor:pointer;
-}
-.card{
-  background:#fff;
-  margin:12px;
-  padding:14px;
-  border-radius:12px;
-  box-shadow:0 2px 8px rgba(0,0,0,.1);
-}
-input,select,button{
-  width:100%;
-  padding:10px;
-  margin-top:8px;
-  font-size:16px;
-  border-radius:8px;
-  border:1px solid #ccc;
-}
-button{
-  background:#111;
-  color:#fff;
-  border:none;
-}
+body{margin:0;font-family:Arial;background:#f2f2f2}
+header{background:#111;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.plus{font-size:28px;cursor:pointer}
+.card{background:#fff;margin:12px;padding:14px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+input,select,button{width:100%;padding:10px;margin-top:8px;font-size:16px;border-radius:8px;border:1px solid #ccc}
+button{background:#111;color:#fff;border:none}
 .hidden{display:none}
-.student{
-  margin-bottom:10px;
-}
 .paid{color:green;font-weight:bold}
 .unpaid{color:red;font-weight:bold}
 </style>
@@ -80,11 +46,11 @@ button{
     <option>Женская</option>
   </select>
 
-  <input id="parent" placeholder="ФИО родителя" list="parents">
-  <datalist id="parents"></datalist>
+  <input id="parentInput" placeholder="ФИО родителя" list="parentsList">
+  <datalist id="parentsList"></datalist>
 
-  <input id="student" placeholder="ФИО ученика">
-  <button onclick="add()">Добавить</button>
+  <input id="studentInput" placeholder="ФИО ученика">
+  <button onclick="addStudent()">Добавить</button>
 </div>
 
 <div id="list"></div>
@@ -92,14 +58,21 @@ button{
 </div>
 
 <script>
-const FIXED = 3000;
-
 if(!localStorage.pin) localStorage.pin='1234';
 
-let data = JSON.parse(localStorage.data || '[]');
+const pinScreen = document.getElementById('pinScreen');
+const app = document.getElementById('app');
+const formBlock = document.getElementById('formBlock');
+const parentInput = document.getElementById('parentInput');
+const studentInput = document.getElementById('studentInput');
+const parentsList = document.getElementById('parentsList');
+const groupSelect = document.getElementById('group');
+const list = document.getElementById('list');
+
+let data = JSON.parse(localStorage.getItem('bjj_data') || '[]');
 
 function login(){
-  if(pinInput.value===localStorage.pin){
+  if(pinInput.value === localStorage.pin){
     pinScreen.classList.add('hidden');
     app.classList.remove('hidden');
     render();
@@ -111,29 +84,35 @@ function toggleForm(){
 }
 
 function save(){
-  localStorage.data = JSON.stringify(data);
+  localStorage.setItem('bjj_data', JSON.stringify(data));
 }
 
-function add(){
+function addStudent(){
+  if(!parentInput.value || !studentInput.value){
+    alert('Заполните родителя и ученика');
+    return;
+  }
   data.push({
-    parent: parent.value,
-    student: student.value,
-    group: group.value,
+    parent: parentInput.value.trim(),
+    student: studentInput.value.trim(),
+    group: groupSelect.value,
     paid:false
   });
-  parent.value='';
-  student.value='';
+  parentInput.value='';
+  studentInput.value='';
   save();
   render();
 }
 
 function render(){
   list.innerHTML='';
-  const parentsSet=new Set();
+  parentsList.innerHTML='';
+  const parentsSet = new Set();
+
   data.forEach((s,i)=>{
     parentsSet.add(s.parent);
-    const d=document.createElement('div');
-    d.className='card student';
+    const d = document.createElement('div');
+    d.className='card';
     d.innerHTML=`
       <b>${s.student}</b><br>
       Родитель: ${s.parent}<br>
@@ -141,29 +120,32 @@ function render(){
       <span class="${s.paid?'paid':'unpaid'}">
         ${s.paid?'Оплачено':'Не оплачено'}
       </span><br><br>
-      <button onclick="pay(${i})">Оплата</button>
-      <button onclick="del(${i})" style="background:#b00020">Удалить</button>
+      <button onclick="togglePay(${i})">Оплата</button>
+      <button onclick="remove(${i})" style="background:#b00020">Удалить</button>
     `;
     list.appendChild(d);
   });
 
-  parents.innerHTML='';
   parentsSet.forEach(p=>{
     const o=document.createElement('option');
     o.value=p;
-    parents.appendChild(o);
+    parentsList.appendChild(o);
   });
 }
 
-function pay(i){
-  data[i].paid=!data[i].paid;
+function togglePay(i){
+  data[i].paid = !data[i].paid;
   save(); render();
 }
-function del(i){
+
+function remove(i){
   data.splice(i,1);
   save(); render();
 }
 
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
 
 </body>
