@@ -1,211 +1,138 @@
-// === Инициализация ===
 if(!localStorage.pin) localStorage.pin='1234';
+const FIXED_PAYMENT=3000;
+let currentGroup='Детская';
+let data=JSON.parse(localStorage.getItem('bjj_data')||'[]');
+const months=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 
-const FIXED_PAYMENT = 3000;
-let currentGroup = 'Детская';
-let data = JSON.parse(localStorage.getItem('bjj_data')||'[]');
-const months = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const pinScreen=document.getElementById('pinScreen');
+const app=document.getElementById('app');
+const formBlock=document.getElementById('formBlock');
+const parentInput=document.getElementById('parentInput');
+const phoneInput=document.getElementById('phoneInput');
+const studentInput=document.getElementById('studentInput');
+const list=document.getElementById('list');
+const tabs=document.querySelectorAll('.tab');
+const loginBtn=document.getElementById('loginBtn');
+const addBtn=document.getElementById('addStudentBtn');
+const toggleFormBtn=document.getElementById('toggleForm');
 
-// === Элементы DOM ===
-const pinScreen = document.getElementById('pinScreen');
-const app = document.getElementById('app');
-const formBlock = document.getElementById('formBlock');
-const parentInput = document.getElementById('parentInput');
-const phoneInput = document.getElementById('phoneInput');
-const studentInput = document.getElementById('studentInput');
-const parentsList = document.getElementById('parentsList');
-const list = document.getElementById('list');
-const tabs = document.querySelectorAll('.tab');
-const loginBtn = document.getElementById('loginBtn');
-const addBtn = document.getElementById('addStudentBtn');
-const toggleFormBtn = document.getElementById('toggleForm');
+// Модалка
+const modal=document.getElementById('modal');
+modal.classList.add('hidden');
+const modalText=document.getElementById('modal-text');
+const modalOk=document.getElementById('modal-ok');
+const modalCancel=document.getElementById('modal-cancel');
+let currentAction=null;
+let currentIndex=null;
 
-// === Модальное окно ===
-const modal = document.getElementById('modal');
-modal.classList.add('hidden'); // скрываем по умолчанию
-const modalText = document.getElementById('modal-text');
-const modalOk = document.getElementById('modal-ok');
-const modalCancel = document.getElementById('modal-cancel');
-let currentAction = null;
-let currentIndex = null;
-
-// === Логин по PIN ===
-loginBtn.addEventListener('click', ()=>{
-  if(document.getElementById('pinInput').value === localStorage.pin){
+// Вход по PIN
+loginBtn.addEventListener('click',()=>{
+  if(document.getElementById('pinInput').value===localStorage.pin){
     pinScreen.classList.add('hidden');
     app.classList.remove('hidden');
     render();
-  } else alert('Неверный PIN');
+  } else alert("Неверный PIN");
 });
 
-// === Вкладки ===
+// Вкладки
 tabs.forEach(tab=>{
-  tab.addEventListener('click', ()=>{
-    currentGroup = tab.dataset.group;
+  tab.addEventListener('click',()=>{
+    currentGroup=tab.dataset.group;
     tabs.forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
+    formBlock.classList.add('hidden');
     render();
   });
 });
 
-// === Показ/скрытие формы ===
-toggleFormBtn.addEventListener('click', ()=>{
+// Плюс — показать форму
+toggleFormBtn.addEventListener('click',()=>{
   formBlock.classList.toggle('hidden');
   adjustFormFields();
 });
 
-// === Адаптация полей формы ===
+// Адаптация полей
 function adjustFormFields(){
-  if(currentGroup === "Детская"){
-    parentInput.parentElement.style.display = 'block';
-    phoneInput.parentElement.style.display = 'block';
-    studentInput.placeholder = "ФИО ученика";
+  if(currentGroup==="Детская"){
+    document.getElementById('parentField').style.display='block';
+    studentInput.placeholder="ФИО ученика";
   } else {
-    parentInput.parentElement.style.display = 'none';
-    studentInput.placeholder = "ФИО спортсмена";
-    phoneInput.parentElement.style.display = 'block';
+    document.getElementById('parentField').style.display='none';
+    studentInput.placeholder="ФИО спортсмена";
   }
 }
 
-// === Добавление ученика ===
-addBtn.addEventListener('click', ()=>{
-  if(currentGroup === "Детская" && (!parentInput.value || !studentInput.value)){
-    alert('Заполните ФИО родителей и ФИО ученика');
-    return;
-  }
-  if(currentGroup !== "Детская" && !studentInput.value){
-    alert('Заполните ФИО спортсмена');
-    return;
-  }
+// Добавление ученика
+addBtn.addEventListener('click',()=>{
+  const parent=parentInput.value.trim();
+  const phone=phoneInput.value.trim();
+  const student=studentInput.value.trim();
 
-  const newStudent = {
+  if(currentGroup==="Детская" && (!parent||!student)){ alert("Заполните ФИО родителя и ученика!"); return; }
+  if(currentGroup!=="Детская" && !student){ alert("Заполните ФИО спортсмена!"); return; }
+
+  data.push({
     group: currentGroup,
-    parent: currentGroup==="Детская"? parentInput.value.trim() : "",
-    phone: phoneInput.value.trim(),
-    student: studentInput.value.trim(),
+    parent: currentGroup==="Детская"?parent:"",
+    phone: phone,
+    student: student,
     payments: {}
-  };
-  data.push(newStudent);
-
+  });
   parentInput.value=''; phoneInput.value=''; studentInput.value='';
-  save();
-  render();
+  save(); render();
 });
 
-// === Сохранение данных ===
-function save(){
-  localStorage.setItem('bjj_data', JSON.stringify(data));
-}
+// Сохранение
+function save(){ localStorage.setItem('bjj_data',JSON.stringify(data)); }
 
-// === Рендер ===
+// Рендер списка
 function render(){
-  list.innerHTML = '';
-  parentsList.innerHTML = '';
-  const parentsSet = new Set();
-
-  if(currentGroup === "Оплата"){
-    renderPayments();
-    return;
-  }
-
-  data.filter(s=>s.group === currentGroup).forEach((s,i)=>{
-    if(s.parent) parentsSet.add(s.parent);
-    const paidThisMonth = s.payments[months[new Date().getMonth()]] || false;
-
-    const d = document.createElement('div');
-    d.className = 'card';
-    d.innerHTML = `<b>${s.student}</b><br>
-      ${s.parent? `Родитель: ${s.parent} (` : ''}${s.phone}${s.parent?')':''}<br>
-      <span class="${paidThisMonth?'paid':'unpaid'}">${paidThisMonth?'Оплачено':'Не оплачено'}</span><br><br>
+  list.innerHTML='';
+  data.filter(s=>s.group===currentGroup).forEach((s,i)=>{
+    const paid=data[i].payments[months[new Date().getMonth()]]||false;
+    const d=document.createElement('div');
+    d.className='card';
+    d.innerHTML=`<b>${s.student}</b><br>
+      ${s.parent?`Родитель: ${s.parent} (`:''}${s.phone}${s.parent?')':''}<br>
+      <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span><br><br>
       <button class="pay-btn" data-index="${i}">Оплата</button>
       <button class="remove-btn" data-index="${i}" style="background:#b00020">Удалить</button>`;
     list.appendChild(d);
   });
 
-  parentsSet.forEach(p=>{
-    const o = document.createElement('option');
-    o.value = p;
-    parentsList.appendChild(o);
+  document.querySelectorAll('.pay-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>confirmPay(Number(btn.dataset.index)));
   });
-
-  // Привязываем события кнопок
-  document.querySelectorAll('.pay-btn').forEach(btn => {
-    btn.addEventListener('click', ()=> confirmPay(Number(btn.dataset.index)));
-  });
-  document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', ()=> confirmRemove(Number(btn.dataset.index)));
+  document.querySelectorAll('.remove-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>confirmRemove(Number(btn.dataset.index)));
   });
 }
 
-// === Вкладка Оплата ===
-function renderPayments(){
-  const currentMonth = months[new Date().getMonth()];
-  const totals = {Детская:0, Взрослая:0, Женская:0};
-  list.innerHTML = '<h4>Оплата за ' + currentMonth + '</h4>';
-
-  data.forEach(s=>{
-    const paid = s.payments[currentMonth] || false;
-    if(paid) totals[s.group] += FIXED_PAYMENT;
-    const d = document.createElement('div');
-    d.className = 'card';
-    d.innerHTML = `<b>${s.student}</b> (${s.group})<br>
-      ${s.parent? `Родитель: ${s.parent} (` : ''}${s.phone}${s.parent?')':''}<br>
-      <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span>
-      <button onclick="confirmPay(${data.indexOf(s)})">Оплатить</button>`;
-    list.appendChild(d);
-  });
-
-  const summary = document.createElement('div');
-  summary.className = 'card';
-  summary.innerHTML = `<strong>Доход за месяц:</strong> ${totals.Детская + totals.Взрослая + totals.Женская} ₽<br>
-    Детская: ${totals.Детская} ₽<br>
-    Взрослая: ${totals.Взрослая} ₽<br>
-    Женская: ${totals.Женская} ₽`;
-  list.prepend(summary);
-}
-
-// === Модальные окна ===
+// Модалка
 function confirmPay(i){
-  currentAction = 'pay';
-  currentIndex = i;
-  const s = data[i];
-  modalText.textContent = `Подтвердите оплату ученика: ${s.student} (${s.group})`;
+  currentAction='pay';
+  currentIndex=i;
+  modalText.textContent=`Подтвердите оплату: ${data[i].student} (${data[i].group})`;
   modal.classList.remove('hidden');
 }
-
 function confirmRemove(i){
-  currentAction = 'remove';
-  currentIndex = i;
-  modalText.textContent = `Удалить ученика: ${data[i].student}?`;
+  currentAction='remove';
+  currentIndex=i;
+  modalText.textContent=`Удалить ученика: ${data[i].student}?`;
   modal.classList.remove('hidden');
 }
-
-modalOk.addEventListener('click', ()=>{
-  if(currentAction==='pay'){
-    const month = months[new Date().getMonth()];
-    data[currentIndex].payments[month] = true;
-  } else if(currentAction==='remove'){
-    data.splice(currentIndex,1);
-  }
-  save();
-  render();
-  modal.classList.add('hidden');
-  currentAction = null;
-  currentIndex = null;
+modalOk.addEventListener('click',()=>{
+  if(currentAction==='pay'){ const month=months[new Date().getMonth()]; data[currentIndex].payments[month]=true; }
+  if(currentAction==='remove') data.splice(currentIndex,1);
+  save(); render(); modal.classList.add('hidden'); currentAction=null; currentIndex=null;
+});
+modalCancel.addEventListener('click',()=>{
+  if(currentAction==='pay'){ const month=months[new Date().getMonth()]; data[currentIndex].payments[month]=false; save(); render(); }
+  modal.classList.add('hidden'); currentAction=null; currentIndex=null;
 });
 
-modalCancel.addEventListener('click', ()=>{
-  if(currentAction==='pay'){
-    const month = months[new Date().getMonth()];
-    data[currentIndex].payments[month] = false;
-    save();
-    render();
-  }
-  modal.classList.add('hidden');
-  currentAction = null;
-  currentIndex = null;
-});
+window.confirmPay=confirmPay;
+window.confirmRemove=confirmRemove;
 
-// === Глобальные функции для HTML ===
-window.confirmPay = confirmPay;
-window.confirmRemove = confirmRemove;
+// PWA Service Worker
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
