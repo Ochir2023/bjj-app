@@ -51,20 +51,39 @@ function save(){localStorage.setItem('bjj_data',JSON.stringify(data));}
 function render(){
   list.innerHTML='';parentsList.innerHTML='';
   const parentsSet=new Set();
+
   data.filter(s=>s.group===currentGroup).forEach((s,i)=>{
     parentsSet.add(s.parent);
     const d=document.createElement('div');
     d.className='card';
     d.innerHTML=`<b>${s.student}</b><br>Родитель: ${s.parent}<br>
     <span class="${s.paid?'paid':'unpaid'}">${s.paid?'Оплачено':'Не оплачено'}</span><br><br>
-    <button onclick="togglePay(${i})">Оплата</button>
-    <button onclick="remove(${i})" style="background:#b00020">Удалить</button>`;
+    <button onclick="confirmPay(${i})">Оплата</button>
+    <button onclick="confirmRemove(${i})" style="background:#b00020">Удалить</button>`;
     list.appendChild(d);
   });
+
   parentsSet.forEach(p=>{
     const o=document.createElement('option');o.value=p;parentsList.appendChild(o);
   });
 }
 
-function togglePay(i){data[i].paid=!data[i].paid;save();render();}
-function remove(i){data.splice(i,1);save();render();}
+// Подтверждение оплаты
+function confirmPay(i){
+  const confirmed = confirm(`Подтвердите оплату ученика: ${data[i].student} \nНажмите OK если оплатил, Отмена если нет`);
+  if(confirmed){
+    data[i].paid=true;
+  }else{
+    data[i].paid=false;
+  }
+  save(); render();
+}
+
+// Подтверждение удаления
+function confirmRemove(i){
+  const confirmed = confirm(`Удалить ученика: ${data[i].student}?`);
+  if(confirmed){
+    data.splice(i,1);
+    save(); render();
+  }
+}
