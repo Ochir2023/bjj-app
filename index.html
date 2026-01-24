@@ -10,10 +10,60 @@
 
 <style>
 body{margin:0;font-family:Arial;background:#f2f2f2}
-header{background:#111;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
-.plus{font-size:28px;cursor:pointer}
-.card{background:#fff;margin:12px;padding:14px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-input,select,button{width:100%;padding:10px;margin-top:8px;font-size:16px;border-radius:8px;border:1px solid #ccc}
+
+/* HEADER */
+header{
+  background:#111;
+  color:#fff;
+  padding:12px;
+}
+.tabs{
+  display:flex;
+}
+.tab{
+  flex:1;
+  text-align:center;
+  padding:10px;
+  cursor:pointer;
+  background:#222;
+}
+.tab.active{
+  background:#fff;
+  color:#111;
+  font-weight:bold;
+}
+.plus{
+  position:fixed;
+  top:12px;
+  right:12px;
+  font-size:26px;
+  background:#111;
+  color:#fff;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+
+/* CARDS */
+.card{
+  background:#fff;
+  margin:12px;
+  padding:14px;
+  border-radius:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.1)
+}
+input,select,button{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  font-size:16px;
+  border-radius:8px;
+  border:1px solid #ccc
+}
 button{background:#111;color:#fff;border:none}
 .hidden{display:none}
 .paid{color:green;font-weight:bold}
@@ -23,7 +73,7 @@ button{background:#111;color:#fff;border:none}
 
 <body>
 
-<!-- PIN -->
+<!-- PIN SCREEN -->
 <div id="pinScreen" class="card">
   <h3>Введите PIN</h3>
   <input type="password" id="pinInput">
@@ -34,18 +84,17 @@ button{background:#111;color:#fff;border:none}
 <div id="app" class="hidden">
 
 <header>
-  <div>BJJ Учёт</div>
-  <div class="plus" onclick="toggleForm()">＋</div>
+  <div class="tabs">
+    <div class="tab active" onclick="setGroup('Детская')">Детская</div>
+    <div class="tab" onclick="setGroup('Взрослая')">Взрослая</div>
+    <div class="tab" onclick="setGroup('Женская')">Женская</div>
+  </div>
 </header>
+
+<div class="plus" onclick="toggleForm()">＋</div>
 
 <!-- FORM -->
 <div id="formBlock" class="card hidden">
-  <select id="group">
-    <option>Детская</option>
-    <option>Взрослая</option>
-    <option>Женская</option>
-  </select>
-
   <input id="parentInput" placeholder="ФИО родителя" list="parentsList">
   <datalist id="parentsList"></datalist>
 
@@ -60,23 +109,31 @@ button{background:#111;color:#fff;border:none}
 <script>
 if(!localStorage.pin) localStorage.pin='1234';
 
+let currentGroup = 'Детская';
+let data = JSON.parse(localStorage.getItem('bjj_data') || '[]');
+
 const pinScreen = document.getElementById('pinScreen');
 const app = document.getElementById('app');
 const formBlock = document.getElementById('formBlock');
 const parentInput = document.getElementById('parentInput');
 const studentInput = document.getElementById('studentInput');
 const parentsList = document.getElementById('parentsList');
-const groupSelect = document.getElementById('group');
 const list = document.getElementById('list');
-
-let data = JSON.parse(localStorage.getItem('bjj_data') || '[]');
+const tabs = document.querySelectorAll('.tab');
 
 function login(){
-  if(pinInput.value === localStorage.pin){
+  if(pinInput.value===localStorage.pin){
     pinScreen.classList.add('hidden');
     app.classList.remove('hidden');
     render();
   } else alert('Неверный PIN');
+}
+
+function setGroup(g){
+  currentGroup=g;
+  tabs.forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  render();
 }
 
 function toggleForm(){
@@ -89,13 +146,13 @@ function save(){
 
 function addStudent(){
   if(!parentInput.value || !studentInput.value){
-    alert('Заполните родителя и ученика');
+    alert('Заполните все поля');
     return;
   }
   data.push({
     parent: parentInput.value.trim(),
     student: studentInput.value.trim(),
-    group: groupSelect.value,
+    group: currentGroup,
     paid:false
   });
   parentInput.value='';
@@ -109,14 +166,13 @@ function render(){
   parentsList.innerHTML='';
   const parentsSet = new Set();
 
-  data.forEach((s,i)=>{
+  data.filter(s=>s.group===currentGroup).forEach((s,i)=>{
     parentsSet.add(s.parent);
-    const d = document.createElement('div');
+    const d=document.createElement('div');
     d.className='card';
     d.innerHTML=`
       <b>${s.student}</b><br>
       Родитель: ${s.parent}<br>
-      Группа: ${s.group}<br>
       <span class="${s.paid?'paid':'unpaid'}">
         ${s.paid?'Оплачено':'Не оплачено'}
       </span><br><br>
@@ -134,10 +190,9 @@ function render(){
 }
 
 function togglePay(i){
-  data[i].paid = !data[i].paid;
+  data[i].paid=!data[i].paid;
   save(); render();
 }
-
 function remove(i){
   data.splice(i,1);
   save(); render();
