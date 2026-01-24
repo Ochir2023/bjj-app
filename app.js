@@ -88,6 +88,10 @@ function save(){ localStorage.setItem('bjj_data',JSON.stringify(data)); }
 // Рендер списка
 function render(){
   list.innerHTML='';
+  if(currentGroup==='Оплата'){
+    renderPayments();
+    return;
+     }
   data.filter(s=>s.group===currentGroup).forEach((s,i)=>{
     const paid=data[i].payments[months[new Date().getMonth()]]||false;
     const d=document.createElement('div');
