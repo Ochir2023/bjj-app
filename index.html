@@ -15,17 +15,21 @@ body{margin:0;font-family:Arial;background:#f2f2f2}
 header{
   background:#111;
   color:#fff;
-  padding:12px;
+  padding:8px 8px 0 8px;
 }
 .tabs{
   display:flex;
+  gap:6px;
+  padding-right:56px; /* место под плюс */
 }
 .tab{
   flex:1;
   text-align:center;
-  padding:10px;
+  padding:8px 4px;
+  font-size:14px;
   cursor:pointer;
   background:#222;
+  border-radius:8px 8px 0 0;
 }
 .tab.active{
   background:#fff;
@@ -34,8 +38,8 @@ header{
 }
 .plus{
   position:fixed;
-  top:12px;
-  right:12px;
+  top:10px;
+  right:10px;
   font-size:26px;
   background:#111;
   color:#fff;
@@ -46,9 +50,10 @@ header{
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  z-index:10;
 }
 
-/* CARDS */
+/* CONTENT */
 .card{
   background:#fff;
   margin:12px;
@@ -56,7 +61,7 @@ header{
   border-radius:12px;
   box-shadow:0 2px 8px rgba(0,0,0,.1)
 }
-input,select,button{
+input,button{
   width:100%;
   padding:10px;
   margin-top:8px;
@@ -73,7 +78,7 @@ button{background:#111;color:#fff;border:none}
 
 <body>
 
-<!-- PIN SCREEN -->
+<!-- PIN -->
 <div id="pinScreen" class="card">
   <h3>Введите PIN</h3>
   <input type="password" id="pinInput">
@@ -85,9 +90,9 @@ button{background:#111;color:#fff;border:none}
 
 <header>
   <div class="tabs">
-    <div class="tab active" onclick="setGroup('Детская')">Детская</div>
-    <div class="tab" onclick="setGroup('Взрослая')">Взрослая</div>
-    <div class="tab" onclick="setGroup('Женская')">Женская</div>
+    <div class="tab active" onclick="setGroup('Детская',this)">Детская</div>
+    <div class="tab" onclick="setGroup('Взрослая',this)">Взрослая</div>
+    <div class="tab" onclick="setGroup('Женская',this)">Женская</div>
   </div>
 </header>
 
@@ -97,7 +102,6 @@ button{background:#111;color:#fff;border:none}
 <div id="formBlock" class="card hidden">
   <input id="parentInput" placeholder="ФИО родителя" list="parentsList">
   <datalist id="parentsList"></datalist>
-
   <input id="studentInput" placeholder="ФИО ученика">
   <button onclick="addStudent()">Добавить</button>
 </div>
@@ -109,17 +113,17 @@ button{background:#111;color:#fff;border:none}
 <script>
 if(!localStorage.pin) localStorage.pin='1234';
 
-let currentGroup = 'Детская';
-let data = JSON.parse(localStorage.getItem('bjj_data') || '[]');
+let currentGroup='Детская';
+let data=JSON.parse(localStorage.getItem('bjj_data')||'[]');
 
-const pinScreen = document.getElementById('pinScreen');
-const app = document.getElementById('app');
-const formBlock = document.getElementById('formBlock');
-const parentInput = document.getElementById('parentInput');
-const studentInput = document.getElementById('studentInput');
-const parentsList = document.getElementById('parentsList');
-const list = document.getElementById('list');
-const tabs = document.querySelectorAll('.tab');
+const pinScreen=document.getElementById('pinScreen');
+const app=document.getElementById('app');
+const formBlock=document.getElementById('formBlock');
+const parentInput=document.getElementById('parentInput');
+const studentInput=document.getElementById('studentInput');
+const parentsList=document.getElementById('parentsList');
+const list=document.getElementById('list');
+const tabs=document.querySelectorAll('.tab');
 
 function login(){
   if(pinInput.value===localStorage.pin){
@@ -129,10 +133,10 @@ function login(){
   } else alert('Неверный PIN');
 }
 
-function setGroup(g){
+function setGroup(g,el){
   currentGroup=g;
   tabs.forEach(t=>t.classList.remove('active'));
-  event.target.classList.add('active');
+  el.classList.add('active');
   render();
 }
 
@@ -141,18 +145,18 @@ function toggleForm(){
 }
 
 function save(){
-  localStorage.setItem('bjj_data', JSON.stringify(data));
+  localStorage.setItem('bjj_data',JSON.stringify(data));
 }
 
 function addStudent(){
-  if(!parentInput.value || !studentInput.value){
-    alert('Заполните все поля');
+  if(!parentInput.value||!studentInput.value){
+    alert('Заполните поля');
     return;
   }
   data.push({
-    parent: parentInput.value.trim(),
-    student: studentInput.value.trim(),
-    group: currentGroup,
+    parent:parentInput.value.trim(),
+    student:studentInput.value.trim(),
+    group:currentGroup,
     paid:false
   });
   parentInput.value='';
@@ -164,7 +168,7 @@ function addStudent(){
 function render(){
   list.innerHTML='';
   parentsList.innerHTML='';
-  const parentsSet = new Set();
+  const parentsSet=new Set();
 
   data.filter(s=>s.group===currentGroup).forEach((s,i)=>{
     parentsSet.add(s.parent);
@@ -191,11 +195,11 @@ function render(){
 
 function togglePay(i){
   data[i].paid=!data[i].paid;
-  save(); render();
+  save();render();
 }
 function remove(i){
   data.splice(i,1);
-  save(); render();
+  save();render();
 }
 
 if('serviceWorker' in navigator){
