@@ -1,185 +1,62 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BJJ Учёт</title>
-
-<style>
-body{margin:0;font-family:Arial;background:#f2f2f2}
-.hidden{display:none}
-
-/* CARD */
-.card{
-  background:#fff;
-  margin:10px;
-  padding:12px;
-  border-radius:10px;
-}
-
-/* INPUTS */
-input,button,select{
-  width:100%;
-  padding:8px;
-  margin-top:6px;
-  font-size:14px;
-}
-
-/* PIN */
-#pinScreen{
-  height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* HEADER */
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:10px;
-  background:#111;
-  color:#fff;
-}
-.tabs{display:flex;gap:6px}
-.tab{
-  padding:6px 10px;
-  background:#333;
-  border-radius:6px;
-  font-size:14px;
-  cursor:pointer;
-}
-.tab.active{background:#555}
-#addBtn{
-  font-size:22px;
-  background:#fff;
-  border:none;
-  border-radius:50%;
-  padding:4px 10px;
-}
-
-/* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.5);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.modal-content{
-  background:#fff;
-  padding:16px;
-  border-radius:10px;
-  width:90%;
-  max-width:320px;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>BJJ Ученики</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- PIN SCREEN -->
-<div id="pinScreen">
-  <div class="card">
-    <h3>Введите PIN</h3>
-    <input id="pinInput" type="password">
-    <button onclick="checkPin()">Войти</button>
-  </div>
+<!-- СТРАНИЦА PIN -->
+<div id="pinScreen" class="screen">
+  <h2>Введите PIN-код</h2>
+  <input type="password" id="pinInput" placeholder="PIN">
+  <button onclick="checkPin()">Войти</button>
 </div>
 
-<!-- APP -->
-<div id="app" class="hidden">
+<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+<div id="appScreen" class="screen hidden">
 
-<header>
-  <div class="tabs">
-    <div class="tab active" onclick="setGroup('Детская')">Детская</div>
-    <div class="tab" onclick="setGroup('Взрослая')">Взрослая</div>
-    <div class="tab" onclick="setGroup('Женская')">Женская</div>
-  </div>
-  <button id="addBtn" onclick="openForm()">＋</button>
-</header>
+  <!-- HEADER -->
+  <header>
+    <div class="tabs">
+      <button onclick="setGroup('Детская')">Детская</button>
+      <button onclick="setGroup('Взрослая')">Взрослая</button>
+      <button onclick="setGroup('Женская')">Женская</button>
+    </div>
+    <button class="plus" onclick="openAddModal()">＋</button>
+  </header>
 
-<div id="list"></div>
+  <!-- СПИСОК -->
+  <div id="list"></div>
 </div>
 
-<!-- FORM MODAL (ВАЖНО: hidden) -->
-<div id="formModal" class="modal hidden">
+<!-- МОДАЛКА ДОБАВЛЕНИЯ -->
+<div id="addModal" class="modal hidden">
   <div class="modal-content">
-    <h3>Добавить</h3>
+    <h3 id="modalTitle">Добавить</h3>
 
-    <select id="groupSelect">
-      <option>Детская</option>
-      <option>Взрослая</option>
-      <option>Женская</option>
-    </select>
+    <input id="parentName" placeholder="ФИО родителя">
+    <input id="parentPhone" placeholder="Телефон">
 
-    <input id="parent" placeholder="ФИО родителя">
-    <input id="phone" placeholder="Телефон">
-    <input id="student" placeholder="ФИО ученика">
+    <input id="studentName" placeholder="ФИО ученика">
 
-    <button onclick="addStudent()">Сохранить</button>
-    <button onclick="closeForm()">Отмена</button>
+    <button onclick="saveStudent()">Сохранить</button>
+    <button onclick="closeAddModal()">Отмена</button>
   </div>
 </div>
 
-<script>
-/* DATA */
-let currentGroup = 'Детская';
-let students = JSON.parse(localStorage.getItem('bjj_students') || '[]');
+<!-- МОДАЛКА УДАЛЕНИЯ -->
+<div id="confirmDelete" class="modal hidden">
+  <div class="modal-content">
+    <p>Удалить ученика?</p>
+    <button onclick="confirmDeleteYes()">Удалить</button>
+    <button onclick="closeDelete()">Нет</button>
+  </div>
+</div>
 
-/* PIN */
-if(!localStorage.getItem('bjj_pin')){
-  localStorage.setItem('bjj_pin','1234');
-}
-function checkPin(){
-  if(pinInput.value === localStorage.getItem('bjj_pin')){
-    pinScreen.classList.add('hidden');
-    app.classList.remove('hidden');
-    render();
-  }
-}
-
-/* GROUP */
-function setGroup(g){
-  currentGroup = g;
-  document.querySelectorAll('.tab').forEach(t=>{
-    t.classList.toggle('active', t.textContent === g);
-  });
-  render();
-}
-
-/* RENDER */
-function render(){
-  list.innerHTML = '';
-  students.filter(s=>s.group===currentGroup).forEach(s=>{
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.innerHTML = `<b>${s.student}</b><br>Телефон: ${s.phone}`;
-    list.appendChild(div);
-  });
-}
-
-/* FORM */
-function openForm(){
-  formModal.classList.remove('hidden');
-}
-function closeForm(){
-  formModal.classList.add('hidden');
-}
-function addStudent(){
-  students.push({
-    group: groupSelect.value,
-    parent: groupSelect.value==='Детская'?parent.value:'',
-    phone: phone.value,
-    student: student.value
-  });
-  localStorage.setItem('bjj_students', JSON.stringify(students));
-  closeForm();
-  render();
-  parent.value = phone.value = student.value = '';
-}
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
