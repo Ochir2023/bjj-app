@@ -1,88 +1,211 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BJJ PWA</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#000000">
-  <style>
-    body{font-family:Arial;background:#f2f2f2;margin:0;padding:12px}
-    h1{text-align:center;font-size:22px}
-    input,button,select{width:100%;padding:10px;margin-top:6px;font-size:16px;border-radius:8px;border:1px solid #ccc}
-    button{background:#111;color:#fff;border:none;margin-top:10px}
-    .card{background:#fff;padding:14px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);margin-bottom:12px}
-    .row{font-size:14px;margin:3px 0}
-    .actions{display:flex;gap:6px;margin-top:8px}
-    .actions button{flex:1}
-    .delete{background:#b00020}
-    .paid{color:green;font-weight:bold}
-    .unpaid{color:red;font-weight:bold}
-    .hidden{display:none !important}
-    .tabs{display:flex;gap:6px;margin-bottom:6px}
-    .tab{flex:1;text-align:center;padding:6px;background:#ddd;border-radius:6px;cursor:pointer}
-    .tab.active{background:#111;color:#fff}
-    #header{display:flex;justify-content:space-between;align-items:center}
-    #toggleForm{background:#0a74da;padding:8px;border-radius:8px;cursor:pointer}
-    #modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:1000}
-    .modal-content{background:#fff;padding:20px;border-radius:12px;min-width:280px}
-    .modal-buttons{display:flex;gap:6px;margin-top:12px}
-    .modal-buttons button{flex:1}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BJJ Учёт</title>
+
+<style>
+body{margin:0;font-family:Arial;background:#f2f2f2}
+.hidden{display:none}
+.card{background:#fff;margin:10px;padding:12px;border-radius:10px}
+input,select,button{width:100%;padding:8px;margin-top:6px}
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px;
+  background:#111;
+  color:#fff
+}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{
+  padding:6px 10px;
+  background:#333;
+  border-radius:6px;
+  font-size:14px;
+  cursor:pointer
+}
+.tab.active{background:#555}
+#addBtn{
+  background:#fff;
+  border:none;
+  border-radius:50%;
+  font-size:22px;
+  padding:4px 10px;
+}
+
+.actions{display:flex;gap:6px;margin-top:8px}
+.delete{background:#b00020;color:#fff;border:none}
+.pay{background:#111;color:#fff;border:none}
+
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center
+}
+.modal-content{
+  background:#fff;
+  padding:16px;
+  border-radius:10px;
+  width:90%;max-width:320px
+}
+</style>
 </head>
 <body>
 
-<div id="pinScreen" class="card">
-  <h1>BJJ — Учёт учеников</h1>
-  <input type="password" id="pinInput" placeholder="Введите PIN" />
-  <button id="loginBtn">Войти</button>
+<!-- PIN -->
+<div id="pinScreen">
+  <div class="card">
+    <h3>Введите PIN</h3>
+    <input id="pinInput" type="password">
+    <button onclick="checkPin()">Войти</button>
+  </div>
 </div>
 
+<!-- APP -->
 <div id="app" class="hidden">
 
-  <div id="header">
-    <div class="tabs">
-      <div class="tab active" data-group="Детская">Детская</div>
-      <div class="tab" data-group="Взрослая">Взрослая</div>
-      <div class="tab" data-group="Женская">Женская</div>
-      <div class="tab" data-group="Женская">Оплата</div>
-    </div>
-    <div id="toggleForm">+</div>
+<header>
+  <div class="tabs">
+    <div class="tab active" onclick="setTab('list')">Ученики</div>
+    <div class="tab" onclick="setTab('payment')">Оплата</div>
   </div>
+  <button id="addBtn" onclick="openForm()">＋</button>
+</header>
 
-  <div id="formBlock" class="hidden card">
-    <div id="parentField">
-      <input id="parentInput" placeholder="ФИО родителя" />
-      <input id="phoneInput" placeholder="Телефон" />
-    </div>
-    <input id="studentInput" placeholder="ФИО ученика/спортсмена" />
-    <button id="addStudentBtn">Добавить</button>
-  </div>
-
-  <div id="list"></div>
+<div id="content"></div>
 </div>
 
-<!-- Модальное окно -->
-<div id="modal" class="hidden">
+<!-- ADD -->
+<div id="formModal" class="modal hidden">
   <div class="modal-content">
-    <p id="modal-text"></p>
-    <div class="modal-buttons">
-      <button id="modal-ok">Оплатил</button>
-      <button id="modal-cancel">Отмена</button>
-    </div>
-  </div>
-</div>
-  <!-- Модалка удаления -->
-<div id="modalDelete" class="hidden">
-  <div class="modal-content">
-    <p id="modalDeleteText"></p>
-    <div class="modal-buttons">
-      <button id="modalDeleteOk">Удалить</button>
-      <button id="modalDeleteCancel">Отмена</button>
-    </div>
+    <h3>Добавить</h3>
+    <select id="group">
+      <option>Детская</option>
+      <option>Взрослая</option>
+      <option>Женская</option>
+    </select>
+    <input id="parent" placeholder="ФИО родителя">
+    <input id="phone" placeholder="Телефон">
+    <input id="student" placeholder="ФИО ученика">
+    <button onclick="add()">Сохранить</button>
+    <button onclick="closeForm()">Отмена</button>
   </div>
 </div>
 
-<script src="app.js"></script>
+<script>
+/* DATA */
+const PRICE = 3000;
+const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+let currentMonth = new Date().getMonth();
+let tab = 'list';
+let payGroup = 'Детская';
+
+let students = JSON.parse(localStorage.getItem('bjj_students')||'[]');
+
+/* PIN */
+if(!localStorage.getItem('bjj_pin')) localStorage.setItem('bjj_pin','1234');
+function checkPin(){
+  if(pinInput.value===localStorage.getItem('bjj_pin')){
+    pinScreen.classList.add('hidden');
+    app.classList.remove('hidden');
+    render();
+  }
+}
+
+/* TABS */
+function setTab(t){ tab=t; render(); }
+
+/* RENDER */
+function render(){
+  const c = document.getElementById('content');
+  c.innerHTML='';
+
+  if(tab==='list'){
+    c.innerHTML=`
+      <div class="card">
+        ${students.map(s=>`
+          <div><b>${s.student}</b> (${s.group})</div>
+        `).join('')}
+      </div>`;
+  }
+
+  if(tab==='payment'){
+    c.innerHTML=`
+      <div class="card">
+        <select onchange="changeMonth(this.value)">
+          ${months.map((m,i)=>`<option ${i==currentMonth?'selected':''}>${m}</option>`).join('')}
+        </select>
+
+        <div class="tabs">
+          ${['Детская','Взрослая','Женская'].map(g=>`
+            <div class="tab ${g===payGroup?'active':''}" onclick="payGroup='${g}';render()">${g}</div>
+          `).join('')}
+        </div>
+
+        ${students.filter(s=>s.group===payGroup).map((s,i)=>{
+          const paid = s.payments?.[currentMonth];
+          return `
+            <div class="card">
+              <b>${s.student}</b><br>
+              ${months[currentMonth]}: 
+              <span style="color:${paid?'green':'red'}">
+                ${paid?'Оплачено':'Не оплачено'}
+              </span>
+              <div class="actions">
+                <button class="pay" onclick="togglePay(${i})">
+                  ${paid?'Отменить':'Оплатил'}
+                </button>
+                <button class="delete" onclick="remove(${i})">Удалить</button>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+}
+
+/* ADD */
+function openForm(){formModal.classList.remove('hidden')}
+function closeForm(){formModal.classList.add('hidden')}
+function add(){
+  students.push({
+    group:group.value,
+    parent:group.value==='Детская'?parent.value:'',
+    phone:phone.value,
+    student:student.value,
+    payments:{}
+  });
+  save(); closeForm(); render();
+}
+
+/* PAY */
+function togglePay(i){
+  if(!students[i].payments) students[i].payments={}
+  students[i].payments[currentMonth]=!students[i].payments[currentMonth];
+  save(); render();
+}
+
+/* REMOVE */
+function remove(i){
+  if(confirm('Удалить ученика?')){
+    students.splice(i,1);
+    save(); render();
+  }
+}
+
+/* MONTH */
+function changeMonth(m){
+  currentMonth = months.indexOf(m);
+  render();
+}
+
+/* SAVE */
+function save(){
+  localStorage.setItem('bjj_students',JSON.stringify(students));
+}
+</script>
+
 </body>
 </html>
