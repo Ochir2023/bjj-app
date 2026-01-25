@@ -12,14 +12,13 @@ body { margin:0; font-family:Arial; background:#f2f2f2 }
 
 header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
 .tabs { display:flex; flex-wrap:wrap; gap:6px; }
-.tabs button { padding:6px 8px; font-size:13px; }
-
-.plus { font-size:22px; padding:4px 10px; }
+.tabs button { padding:6px 8px; font-size:13px; cursor:pointer; }
+.plus { font-size:22px; padding:4px 10px; cursor:pointer; }
 
 .card { background:#fff; padding:12px; border-radius:10px; margin-top:10px; }
 
 .modal { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; }
-.modal-content { background:#fff; padding:16px; border-radius:12px; width:90%; max-width:320px; }
+.modal-content { background:#fff; padding:16px; border-radius:12px; width:90%; max-width:340px; }
 .modal-content input, .modal-content button, .modal-content select { width:100%; margin-top:8px; padding:8px; }
 
 .actions { display:flex; gap:6px; margin-top:8px; }
@@ -30,6 +29,10 @@ header { display:flex; align-items:center; justify-content:space-between; gap:6p
 
 .paid { color:green; font-weight:bold; }
 .unpaid { color:red; font-weight:bold; }
+
+.small { font-size:12px; color:#666; margin-top:6px; }
+.row { display:flex; gap:8px; align-items:center; }
+.row > * { flex:1; }
 </style>
 </head>
 
@@ -38,7 +41,7 @@ header { display:flex; align-items:center; justify-content:space-between; gap:6p
 <!-- PIN -->
 <div id="pinScreen" class="screen">
   <h2>Введите PIN-код</h2>
-  <input id="pinInput" placeholder="PIN">
+  <input id="pinInput" placeholder="PIN" type="password">
   <button onclick="checkPin()">Войти</button>
 </div>
 
@@ -47,10 +50,10 @@ header { display:flex; align-items:center; justify-content:space-between; gap:6p
 
 <header>
   <div class="tabs">
-    <button onclick="setGroup('Детская')">Детская</button>
-    <button onclick="setGroup('Взрослая')">Взрослая</button>
-    <button onclick="setGroup('Женская')">Женская</button>
-    <button onclick="setGroup('Оплата')">Оплата</button>
+    <button onclick="setMainTab('Детская')">Детская</button>
+    <button onclick="setMainTab('Взрослая')">Взрослая</button>
+    <button onclick="setMainTab('Женская')">Женская</button>
+    <button onclick="setMainTab('Оплата')">Оплата</button>
   </div>
   <button class="plus" onclick="openAdd()">＋</button>
 </header>
@@ -63,7 +66,7 @@ header { display:flex; align-items:center; justify-content:space-between; gap:6p
     <h3>Добавить</h3>
 
     <div class="card" style="margin:0; padding:8px;">
-      <div style="font-size:12px;color:#555;">Группа записи: <b id="groupLabel">Детская</b></div>
+      <div class="small">Группа записи: <b id="groupLabel">Детская</b></div>
     </div>
 
     <div id="parentFields">
@@ -103,20 +106,13 @@ header { display:flex; align-items:center; justify-content:space-between; gap:6p
 /* === НАСТРОЙКИ === */
 const PIN = "1234";
 const PRICE = 3000;
+const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 
 /* === СОСТОЯНИЕ === */
-let group = "Детская";
+let mainTab = "Детская";
+let payGroupTab = "Детская";
+let selectedMonthIndex = new Date().getMonth(); // текущий месяц
 let students = JSON.parse(localStorage.getItem("bjj_students")) || [];
-
-/* миграция старых записей: добавим id и payments */
-students = students.map(s => ({
-  id: s.id || (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2))),
-  group: s.group || "Детская",
-  parent: s.parent || "",
-  phone: s.phone || "",
-  name: s.name || s.student || "",
-  paid: !!s.paid
-}));
 
 let payId = null;
 let delId = null;
@@ -130,9 +126,42 @@ const modalAdd = document.getElementById("modalAdd");
 const modalPay = document.getElementById("modalPay");
 const modalDelete = document.getElementById("modalDelete");
 
+/* === УТИЛИТЫ === */
+function uid(){
+  return (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)));
+}
+function escapeHtml(str){
+  return String(str ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
 function save(){
   localStorage.setItem("bjj_students", JSON.stringify(students));
 }
+function monthName(){ return MONTHS[selectedMonthIndex]; }
+function findIndexById(id){ return students.findIndex(s=>s.id===id); }
+
+/* === МИГРАЦИЯ СТАРЫХ ДАННЫХ ===
+   - добавляем id
+   - переносим старое поле paid в payments[текущий месяц]
+*/
+(function migrate(){
+  const nowMonth = new Date().getMonth();
+  students = students.map(s=>{
+    const id = s.id || uid();
+    const group = s.group || "Детская";
+    const parent = s.parent || "";
+    const phone = s.phone || "";
+    const name = s.name || s.student || "";
+    const payments = s.payments && typeof s.payments === "object" ? s.payments : {};
+    // если было старое paid — перенесём в payments текущего месяца
+    if(typeof s.paid === "boolean"){
+      payments[nowMonth] = s.paid;
+    }
+    return { id, group, parent, phone, name, payments };
+  });
+  save();
+})();
 
 /* === ВХОД === */
 function checkPin() {
@@ -146,38 +175,37 @@ function checkPin() {
   }
 }
 
-/* === ГРУППЫ === */
-function setGroup(g) {
-  group = g;
+/* === ВКЛАДКИ (главные) === */
+function setMainTab(tab){
+  mainTab = tab;
   render();
 }
 
-/* === ПОИСК ПО ID === */
-function findIndexById(id){
-  return students.findIndex(s => s.id === id);
-}
-
 /* === РЕНДЕР === */
-function render() {
+function render(){
   list.innerHTML = "";
 
-  if (group === "Оплата") {
-    renderPayments();
+  if(mainTab === "Оплата"){
+    renderPaymentsTab();
     return;
   }
 
-  const filtered = students.filter(s => s.group === group);
+  // обычные вкладки групп
+  const filtered = students.filter(s=>s.group === mainTab);
+  const title = document.createElement("div");
+  title.className = "card";
+  title.innerHTML = `<b>${escapeHtml(mainTab)}</b><div class="small">Статус оплаты за: <b>${monthName()}</b></div>`;
+  list.appendChild(title);
 
-  filtered.forEach((s) => {
+  filtered.forEach(s=>{
+    const paid = !!s.payments?.[selectedMonthIndex];
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
       <b>${escapeHtml(s.name)}</b><br>
-      ${s.parent ? "Родитель: " + escapeHtml(s.parent) + "<br>" : ""}
+      ${s.parent ? "Родитель: "+escapeHtml(s.parent)+"<br>" : ""}
       Тел: ${escapeHtml(s.phone)}<br>
-      <span class="${s.paid ? 'paid' : 'unpaid'}">
-        ${s.paid ? 'Оплачено' : 'Не оплачено'}
-      </span>
+      <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span>
 
       <div class="actions">
         <button class="pay" onclick="openPay('${s.id}')">Оплата</button>
@@ -186,40 +214,131 @@ function render() {
     `;
     list.appendChild(div);
   });
+}
 
-  save();
+/* === ВКЛАДКА ОПЛАТА === */
+function renderPaymentsTab(){
+  const wrap = document.createElement("div");
+  wrap.className = "card";
+
+  // выбор месяца
+  let monthOptions = MONTHS.map((m,i)=>`<option value="${i}" ${i===selectedMonthIndex?'selected':''}>${m}</option>`).join("");
+
+  // вкладки групп внутри оплаты
+  let groupTabs = ["Детская","Взрослая","Женская"].map(g=>`
+    <button onclick="setPayGroup('${g}')" ${g===payGroupTab?'style="background:#111;color:#fff"':''}>${g}</button>
+  `).join("");
+
+  wrap.innerHTML = `
+    <b>Оплата</b>
+    <div class="small">Фиксированная оплата: <b>${PRICE} ₽</b></div>
+
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <div class="small">Месяц</div>
+        <select id="monthSelect" onchange="setMonth(this.value)">${monthOptions}</select>
+      </div>
+    </div>
+
+    <div class="small" style="margin-top:10px;">Группа</div>
+    <div class="tabs" style="margin-top:6px;">${groupTabs}</div>
+  `;
+  list.appendChild(wrap);
+
+  // список учеников выбранной группы
+  const groupList = students.filter(s=>s.group===payGroupTab);
+
+  let groupSum = 0;
+  let totalSum = 0;
+
+  // общий итог за месяц по всем группам
+  students.forEach(s=>{
+    if(!!s.payments?.[selectedMonthIndex]) totalSum += PRICE;
+  });
+
+  groupList.forEach(s=>{
+    const paid = !!s.payments?.[selectedMonthIndex];
+    if(paid) groupSum += PRICE;
+
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <b>${escapeHtml(s.name)}</b><br>
+      ${s.parent ? "Родитель: "+escapeHtml(s.parent)+"<br>" : ""}
+      Тел: ${escapeHtml(s.phone)}<br>
+      ${monthName()}: <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span>
+
+      <div class="actions">
+        <button class="pay" onclick="openPay('${s.id}')">${paid?'Снять':'Оплатил'}</button>
+        <button class="delete" onclick="openDelete('${s.id}')">Удалить</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  const summary = document.createElement("div");
+  summary.className = "card";
+  summary.innerHTML = `
+    <b>Итоги за ${monthName()}</b><br>
+    Группа "${escapeHtml(payGroupTab)}": <b>${groupSum} ₽</b><br>
+    Общий итог (все группы): <b>${totalSum} ₽</b>
+  `;
+  list.appendChild(summary);
+}
+
+function setPayGroup(g){
+  payGroupTab = g;
+  render();
+}
+
+function setMonth(v){
+  selectedMonthIndex = Number(v);
+  render();
 }
 
 /* === ДОБАВЛЕНИЕ === */
-function openAdd() {
-  groupLabel.textContent = group;
-  parentFields.style.display = (group === "Детская") ? "block" : "none";
-  studentName.placeholder = (group === "Детская") ? "ФИО ученика" : "ФИО спортсмена";
+function openAdd(){
+  groupLabel.textContent = mainTab === "Оплата" ? "Детская" : mainTab;
+  const addGroup = (mainTab === "Оплата") ? "Детская" : mainTab; // если ты в "Оплата", по умолчанию детская
+  // сохраним временно в dataset
+  modalAdd.dataset.addGroup = addGroup;
+
+  parentFields.style.display = (addGroup === "Детская") ? "block" : "none";
+  studentName.placeholder = (addGroup === "Детская") ? "ФИО ученика" : "ФИО спортсмена";
+
   modalAdd.classList.remove("hidden");
 }
-function closeAdd(){ modalAdd.classList.add("hidden"); }
 
-function saveStudent() {
+function closeAdd(){
+  modalAdd.classList.add("hidden");
+}
+
+function saveStudent(){
+  const addGroup = modalAdd.dataset.addGroup || "Детская";
   const parent = parentName.value.trim();
   const phoneVal = phone.value.trim();
   const nameVal = studentName.value.trim();
 
-  if(group === "Детская" && (!parent || !nameVal)){
+  if(addGroup === "Детская" && (!parent || !nameVal)){
     alert("Для детской группы заполните ФИО родителя и ФИО ученика.");
     return;
   }
-  if(group !== "Детская" && !nameVal){
+  if(addGroup !== "Детская" && !nameVal){
     alert("Заполните ФИО спортсмена.");
+    return;
+  }
+  if(!phoneVal){
+    alert("Заполните телефон.");
     return;
   }
 
   students.push({
-    id: crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)),
-    group,
-    parent: group === "Детская" ? parent : "",
+    id: uid(),
+    group: addGroup,
+    parent: addGroup === "Детская" ? parent : "",
     phone: phoneVal,
     name: nameVal,
-    paid: false
+    payments: {} // по месяцам
   });
 
   parentName.value = "";
@@ -231,26 +350,35 @@ function saveStudent() {
   render();
 }
 
-/* === ОПЛАТА === */
+/* === ОПЛАТА (модалка) === */
 function openPay(id){
   payId = id;
   const idx = findIndexById(id);
   if(idx === -1) return;
 
-  payPrompt.textContent = `Отметить оплату: "${students[idx].name}"?`;
+  const s = students[idx];
+  const paid = !!s.payments?.[selectedMonthIndex];
+  payPrompt.textContent = `Оплата за ${monthName()} — "${s.name}" сейчас: ${paid ? "ОПЛАЧЕНО" : "НЕ ОПЛАЧЕНО"}. Изменить?`;
+
   modalPay.classList.remove("hidden");
 }
 
 function confirmPay(v){
   const idx = findIndexById(payId);
-  if(idx === -1) { closePay(); return; }
+  if(idx === -1){ closePay(); return; }
 
-  students[idx].paid = v;
+  if(!students[idx].payments) students[idx].payments = {};
+  students[idx].payments[selectedMonthIndex] = v;
+
   save();
   closePay();
   render();
 }
-function closePay(){ modalPay.classList.add("hidden"); payId = null; }
+
+function closePay(){
+  modalPay.classList.add("hidden");
+  payId = null;
+}
 
 /* === УДАЛЕНИЕ === */
 function openDelete(id){
@@ -264,39 +392,17 @@ function openDelete(id){
 
 function confirmDelete(){
   const idx = findIndexById(delId);
-  if(idx === -1) { closeDelete(); return; }
+  if(idx === -1){ closeDelete(); return; }
 
   students.splice(idx,1);
   save();
   closeDelete();
   render();
 }
-function closeDelete(){ modalDelete.classList.add("hidden"); delId = null; }
 
-/* === ВКЛАДКА ОПЛАТА (сводка по группам) === */
-function renderPayments(){
-  let html = "";
-  ["Детская","Взрослая","Женская"].forEach(g=>{
-    let sum = 0;
-    const rows = students.filter(s=>s.group===g).map(s=>{
-      if(s.paid) sum += PRICE;
-      return `<div style="margin-top:6px;">
-        <b>${escapeHtml(s.name)}</b> — <span class="${s.paid?'paid':'unpaid'}">${s.paid?'✔ Оплачено':'✖ Не оплачено'}</span>
-        <div class="actions">
-          <button class="pay" onclick="openPay('${s.id}')">${s.paid?'Снять':'Оплатил'}</button>
-          <button class="delete" onclick="openDelete('${s.id}')">Удалить</button>
-        </div>
-      </div>`;
-    }).join("");
-
-    html += `<div class="card">
-      <b>${g}</b><br>
-      <div style="margin-top:6px;">Итого за группу: <b>${sum} ₽</b></div>
-      ${rows || "<div style='margin-top:6px;color:#666;'>Нет учеников</div>"}
-    </div>`;
-  });
-
-  list.innerHTML = html;
+function closeDelete(){
+  modalDelete.classList.add("hidden");
+  delId = null;
 }
 
 /* === ОБЩЕЕ === */
@@ -306,16 +412,8 @@ function closeAllModals(){
   modalDelete.classList.add("hidden");
 }
 
-/* защита от вставки HTML */
-function escapeHtml(str){
-  return String(str ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[m]));
-}
-
 /* === СТАРТ === */
 closeAllModals();
-save();
 </script>
 
 </body>
