@@ -1,158 +1,578 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BJJ Учёт</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BJJ — Учёт</title>
 
 <style>
-body { margin:0; font-family:Arial; background:#f2f2f2 }
-.hidden { display:none !important }
-.screen { padding:20px }
+/* =========================
+   AJP-ish: Dark + Gold UI
+   ========================= */
+:root{
+  --bg:#0a0b0e;
+  --panel:#11131a;
+  --panel2:#0f1117;
+  --card:#151826;
+  --card2:#121522;
+  --text:#e9edf6;
+  --muted:#9aa3b2;
+  --line:rgba(255,255,255,.08);
+  --gold:#d3b45a;
+  --gold2:#f0d68a;
+  --danger:#ff4d6d;
+  --ok:#3ddc97;
+  --shadow: 0 10px 30px rgba(0,0,0,.45);
+  --radius:16px;
+  --radius2:22px;
+}
 
-header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
-.tabs { display:flex; flex-wrap:wrap; gap:6px; }
-.tabs button { padding:6px 8px; font-size:13px; cursor:pointer; }
-.plus { font-size:22px; padding:4px 10px; cursor:pointer; }
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 20% -20%, rgba(211,180,90,.18), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(61,220,151,.10), transparent 55%),
+    radial-gradient(900px 500px at 30% 120%, rgba(255,77,109,.10), transparent 55%),
+    var(--bg);
+  color:var(--text);
+}
 
-.card { background:#fff; padding:12px; border-radius:10px; margin-top:10px; }
+.hidden{ display:none !important; }
 
-.modal { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; }
-.modal-content { background:#fff; padding:16px; border-radius:12px; width:90%; max-width:360px; }
-.modal-content input, .modal-content button, .modal-content select { width:100%; margin-top:8px; padding:8px; }
+.container{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px;
+}
 
-.actions { display:flex; gap:6px; margin-top:8px; }
-.actions button { flex:1; }
+/* Top bar */
+.topbar{
+  position: sticky;
+  top:0;
+  z-index:10;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(10,11,14,.92), rgba(10,11,14,.70));
+  border-bottom: 1px solid var(--line);
+}
 
-.delete { background:#b00020; color:#fff; border:none; }
-.pay { background:#111; color:#fff; border:none; }
-.edit { background:#0a74da; color:#fff; border:none; }
+.topbar-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding: 12px 14px;
+}
 
-.paid { color:green; font-weight:bold; }
-.unpaid { color:red; font-weight:bold; }
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width: 170px;
+}
 
-.small { font-size:12px; color:#666; margin-top:6px; }
-.row { display:flex; gap:8px; align-items:center; }
-.row > * { flex:1; }
-hr { border:none; border-top:1px solid #eee; margin:10px 0; }
+.logo{
+  width:36px;
+  height:36px;
+  border-radius: 12px;
+  background:
+    radial-gradient(12px 12px at 30% 30%, rgba(240,214,138,.85), transparent 70%),
+    linear-gradient(135deg, rgba(211,180,90,.90), rgba(211,180,90,.25));
+  box-shadow: 0 8px 20px rgba(211,180,90,.18);
+  border: 1px solid rgba(211,180,90,.35);
+}
+
+.brand-title{
+  display:flex;
+  flex-direction:column;
+  line-height:1.1;
+}
+.brand-title b{
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  font-size: 13px;
+}
+.brand-title span{
+  font-size:12px;
+  color: var(--muted);
+}
+
+/* Header tabs */
+.tabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:nowrap;
+  overflow:auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar{ display:none; }
+
+.tab{
+  border:1px solid var(--line);
+  background: rgba(21,24,38,.55);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition: .15s ease;
+}
+.tab:hover{
+  border-color: rgba(211,180,90,.35);
+  transform: translateY(-1px);
+}
+.tab.active{
+  border-color: rgba(211,180,90,.65);
+  background: linear-gradient(135deg, rgba(211,180,90,.22), rgba(21,24,38,.55));
+  box-shadow: 0 10px 25px rgba(211,180,90,.10);
+}
+
+.icon-btn{
+  border:1px solid rgba(211,180,90,.35);
+  background: linear-gradient(135deg, rgba(211,180,90,.22), rgba(21,24,38,.55));
+  color: var(--text);
+  border-radius: 14px;
+  padding: 8px 12px;
+  cursor:pointer;
+  transition: .15s ease;
+  min-width: 44px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+}
+.icon-btn:hover{ transform: translateY(-1px); border-color: rgba(211,180,90,.65); }
+.icon-btn span{ font-size: 20px; line-height: 1; }
+
+.hero{
+  margin-top: 14px;
+  border:1px solid var(--line);
+  border-radius: var(--radius2);
+  background:
+    linear-gradient(135deg, rgba(211,180,90,.10), rgba(17,19,26,.92)),
+    radial-gradient(800px 280px at 20% 10%, rgba(211,180,90,.10), transparent 60%),
+    var(--panel);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+.hero-inner{
+  padding: 16px 16px 12px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-end;
+}
+.hero h1{
+  margin:0;
+  font-size: 18px;
+  letter-spacing:.3px;
+  text-transform:uppercase;
+}
+.hero .meta{
+  margin-top:6px;
+  font-size:12px;
+  color: var(--muted);
+}
+.hero .pill{
+  font-size:12px;
+  border:1px solid rgba(211,180,90,.40);
+  color: var(--gold2);
+  background: rgba(211,180,90,.10);
+  padding:6px 10px;
+  border-radius: 999px;
+}
+
+/* Cards */
+.grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.card{
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(21,24,38,.90), rgba(17,19,26,.92));
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+  padding: 12px;
+}
+
+.card .title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 8px;
+}
+.card .title b{
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing:.4px;
+}
+.badge{
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border:1px solid var(--line);
+  color: var(--muted);
+}
+
+.small{ font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin-top: 8px;
+}
+
+.kv{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.kv .label{ color: var(--muted); font-size:12px; }
+.kv .value{ font-size:12px; }
+
+.status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border:1px solid var(--line);
+  background: rgba(0,0,0,.22);
+}
+.status.ok{ border-color: rgba(61,220,151,.30); color: rgba(61,220,151,.95); }
+.status.bad{ border-color: rgba(255,77,109,.30); color: rgba(255,77,109,.95); }
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top: 10px;
+}
+.btn{
+  flex:1;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  cursor:pointer;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  transition:.15s ease;
+}
+.btn:hover{ transform: translateY(-1px); border-color: rgba(211,180,90,.35); }
+.btn.primary{
+  border-color: rgba(211,180,90,.35);
+  background: linear-gradient(135deg, rgba(211,180,90,.22), rgba(255,255,255,.04));
+}
+.btn.edit{
+  border-color: rgba(80,160,255,.28);
+  background: linear-gradient(135deg, rgba(80,160,255,.18), rgba(255,255,255,.04));
+}
+.btn.danger{
+  border-color: rgba(255,77,109,.30);
+  background: linear-gradient(135deg, rgba(255,77,109,.16), rgba(255,255,255,.04));
+}
+
+select,input{
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  outline:none;
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+}
+input::placeholder{ color: rgba(154,163,178,.85); }
+select{
+  appearance:none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(211,180,90,.9) 50%),
+    linear-gradient(135deg, rgba(211,180,90,.9) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size:6px 6px, 6px 6px;
+  background-repeat:no-repeat;
+}
+
+/* PIN screen */
+.pin-wrap{
+  min-height: 100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 24px 14px;
+}
+.pin-card{
+  width: 100%;
+  max-width: 420px;
+  border-radius: 22px;
+  border:1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(211,180,90,.12), rgba(17,19,26,.94)),
+    radial-gradient(700px 320px at 15% 5%, rgba(211,180,90,.14), transparent 60%),
+    var(--panel);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+.pin-card h2{
+  margin: 0;
+  letter-spacing:.4px;
+  text-transform: uppercase;
+  font-size: 16px;
+}
+.pin-card p{ margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+
+.pin-actions{ display:flex; gap:10px; margin-top: 10px; }
+.pin-actions .btn{ flex:1; }
+
+/* Modals */
+.modal{
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.62);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  z-index: 50;
+}
+.modal-card{
+  width:100%;
+  max-width: 460px;
+  border-radius: 22px;
+  border:1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(211,180,90,.10), rgba(17,19,26,.95)),
+    var(--panel);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.modal-card h3{
+  margin:0;
+  font-size: 14px;
+  letter-spacing:.4px;
+  text-transform: uppercase;
+}
+.modal-card .sub{ margin-top:6px; color: var(--muted); font-size: 12px; }
+.modal-card .modal-actions{ display:flex; gap:10px; margin-top: 12px; }
+.modal-card .modal-actions .btn{ flex:1; }
+
+.split{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:10px;
+  margin-top: 10px;
+}
+@media (min-width: 620px){
+  .split{ grid-template-columns: 1fr 1fr; }
+}
+
+hr{
+  border:none;
+  border-top:1px solid var(--line);
+  margin: 10px 0;
+}
 </style>
 </head>
 
 <body>
 
-<!-- PIN -->
-<div id="pinScreen" class="screen">
-  <h2>Введите PIN-код</h2>
-  <input id="pinInput" placeholder="PIN" type="password">
-  <button onclick="checkPin()">Войти</button>
-</div>
-
-<!-- APP -->
-<div id="appScreen" class="screen hidden">
-
-<header>
-  <div class="tabs">
-    <button onclick="setMainTab('Детская')">Детская</button>
-    <button onclick="setMainTab('Взрослая')">Взрослая</button>
-    <button onclick="setMainTab('Женская')">Женская</button>
-    <button onclick="setMainTab('Оплата')">Оплата</button>
-  </div>
-  <button class="plus" onclick="openAdd()">＋</button>
-</header>
-
-<div id="list"></div>
-
-<!-- МОДАЛКА ДОБАВЛЕНИЯ -->
-<div id="modalAdd" class="modal hidden">
-  <div class="modal-content">
-    <h3>Добавить</h3>
-
-    <div class="card" style="margin:0; padding:8px;">
-      <div class="small">Группа записи: <b id="addGroupLabel">Детская</b></div>
+<!-- ========== PIN SCREEN ========== -->
+<div id="pinScreen" class="pin-wrap">
+  <div class="pin-card">
+    <div class="brand" style="margin-bottom:10px;">
+      <div class="logo"></div>
+      <div class="brand-title">
+        <b>BJJ • УЧЁТ</b>
+        <span>Тренерский журнал • офлайн</span>
+      </div>
     </div>
 
-    <div id="addParentFields">
-      <input id="addParentName" placeholder="ФИО родителя">
+    <h2>Вход по PIN</h2>
+    <p>По умолчанию PIN: <b>1234</b> (можно позже заменить)</p>
+
+    <div style="margin-top:12px;">
+      <input id="pinInput" type="password" placeholder="Введите PIN" inputmode="numeric" />
+      <div class="pin-actions">
+        <button class="btn primary" onclick="checkPin()">Войти</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APP SCREEN ========== -->
+<div id="appScreen" class="hidden">
+
+  <div class="topbar">
+    <div class="topbar-inner container">
+      <div class="brand">
+        <div class="logo"></div>
+        <div class="brand-title">
+          <b>BJJ • УЧЁТ</b>
+          <span id="topHint">Группа: Детская</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="icon-btn" onclick="openAdd()" title="Добавить">
+          <span>＋</span>
+        </button>
+      </div>
     </div>
 
-    <input id="addPhone" placeholder="Телефон">
-    <input id="addStudentName" placeholder="ФИО ученика/спортсмена">
-
-    <button onclick="saveNewStudent()">Сохранить</button>
-    <button onclick="closeAdd()">Отмена</button>
+    <div class="container" style="padding-top:0; padding-bottom:12px;">
+      <div class="tabs">
+        <button class="tab active" id="tabKids"   onclick="setMainTab('Детская')">Детская</button>
+        <button class="tab"        id="tabAdult"  onclick="setMainTab('Взрослая')">Взрослая</button>
+        <button class="tab"        id="tabWomen"  onclick="setMainTab('Женская')">Женская</button>
+        <button class="tab"        id="tabPay"    onclick="setMainTab('Оплата')">Оплата</button>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- МОДАЛКА ОПЛАТЫ (с выбором месяца) -->
-<div id="modalPay" class="modal hidden">
-  <div class="modal-content">
-    <h3>Оплата</h3>
-    <p id="payPrompt" class="small"></p>
-
-    <div class="small">Месяц</div>
-    <select id="payMonthSelect"></select>
-
-    <div class="actions" style="margin-top:10px;">
-      <button class="pay" onclick="confirmPay(true)">Оплатил</button>
-      <button class="delete" onclick="confirmPay(false)">Не оплатил</button>
+  <div class="container">
+    <div class="hero">
+      <div class="hero-inner">
+        <div>
+          <h1 id="heroTitle">Детская группа</h1>
+          <div class="meta" id="heroMeta">Оплата фиксированная: 3000 ₽ • Учёт по месяцам</div>
+        </div>
+        <div class="pill" id="heroPill">Месяц: <span id="pillMonth"></span></div>
+      </div>
     </div>
 
-    <button onclick="closePay()">Отмена</button>
+    <div class="grid" id="list"></div>
   </div>
-</div>
 
-<!-- МОДАЛКА РЕДАКТИРОВАНИЯ -->
-<div id="modalEdit" class="modal hidden">
-  <div class="modal-content">
-    <h3>Редактировать</h3>
+  <!-- ===== MODAL: ADD ===== -->
+  <div id="modalAdd" class="modal hidden">
+    <div class="modal-card">
+      <h3>Добавить</h3>
+      <div class="sub">Группа записи: <b id="addGroupLabel">Детская</b></div>
 
-    <div class="small">Группа</div>
-    <select id="editGroup">
-      <option>Детская</option>
-      <option>Взрослая</option>
-      <option>Женская</option>
-    </select>
+      <div class="split">
+        <div id="addParentBox">
+          <div class="small">Родитель (только для детской)</div>
+          <input id="addParentName" placeholder="ФИО родителя" />
+        </div>
+        <div>
+          <div class="small">Телефон</div>
+          <input id="addPhone" placeholder="+7..." inputmode="tel" />
+        </div>
+      </div>
 
-    <div id="editParentFields">
-      <input id="editParentName" placeholder="ФИО родителя">
+      <div style="margin-top:10px;">
+        <div class="small" id="addNameLabel">ФИО ученика</div>
+        <input id="addStudentName" placeholder="ФИО" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn primary" onclick="saveNewStudent()">Сохранить</button>
+        <button class="btn" onclick="closeAdd()">Отмена</button>
+      </div>
     </div>
-
-    <input id="editPhone" placeholder="Телефон">
-    <input id="editName" placeholder="ФИО ученика/спортсмена">
-
-    <button class="edit" onclick="saveEdit()">Сохранить изменения</button>
-    <button onclick="closeEdit()">Отмена</button>
   </div>
-</div>
 
-<!-- МОДАЛКА УДАЛЕНИЯ -->
-<div id="modalDelete" class="modal hidden">
-  <div class="modal-content">
-    <p id="deletePrompt">Удалить ученика?</p>
-    <button class="delete" onclick="confirmDelete()">Удалить</button>
-    <button onclick="closeDelete()">Отмена</button>
+  <!-- ===== MODAL: PAY ===== -->
+  <div id="modalPay" class="modal hidden">
+    <div class="modal-card">
+      <h3>Оплата</h3>
+      <div class="sub" id="payPrompt"></div>
+
+      <div style="margin-top:10px;">
+        <div class="small">Месяц</div>
+        <select id="payMonthSelect"></select>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn primary" onclick="confirmPay(true)">Оплатил</button>
+        <button class="btn danger" onclick="confirmPay(false)">Не оплатил</button>
+      </div>
+      <button class="btn" style="margin-top:10px;" onclick="closePay()">Отмена</button>
+    </div>
   </div>
-</div>
+
+  <!-- ===== MODAL: EDIT ===== -->
+  <div id="modalEdit" class="modal hidden">
+    <div class="modal-card">
+      <h3>Редактировать</h3>
+      <div class="sub" id="editSub"></div>
+
+      <div class="split">
+        <div>
+          <div class="small">Группа</div>
+          <select id="editGroup">
+            <option>Детская</option>
+            <option>Взрослая</option>
+            <option>Женская</option>
+          </select>
+        </div>
+        <div>
+          <div class="small">Телефон</div>
+          <input id="editPhone" placeholder="+7..." inputmode="tel" />
+        </div>
+      </div>
+
+      <div id="editParentBox" style="margin-top:10px;">
+        <div class="small">ФИО родителя (только для детской)</div>
+        <input id="editParentName" placeholder="ФИО родителя" />
+      </div>
+
+      <div style="margin-top:10px;">
+        <div class="small">ФИО ученика/спортсмена</div>
+        <input id="editName" placeholder="ФИО" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn edit" onclick="saveEdit()">Сохранить</button>
+        <button class="btn" onclick="closeEdit()">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: DELETE ===== -->
+  <div id="modalDelete" class="modal hidden">
+    <div class="modal-card">
+      <h3>Удаление</h3>
+      <div class="sub" id="deletePrompt"></div>
+
+      <div class="modal-actions">
+        <button class="btn danger" onclick="confirmDelete()">Удалить</button>
+        <button class="btn" onclick="closeDelete()">Отмена</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 
 <script>
-/* === НАСТРОЙКИ === */
+/* =========================
+   Logic (same functionality)
+   ========================= */
 const PIN = "1234";
 const PRICE = 3000;
 const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 
-/* === СОСТОЯНИЕ === */
 let mainTab = "Детская";
 let payGroupTab = "Детская";
 let selectedMonthIndex = new Date().getMonth();
+
 let students = JSON.parse(localStorage.getItem("bjj_students")) || [];
+let payId = null, delId = null, editId = null;
 
-let payId = null;
-let delId = null;
-let editId = null;
-
-/* === УТИЛИТЫ === */
 function uid(){
   return (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)));
 }
@@ -164,8 +584,29 @@ function escapeHtml(str){
 function save(){ localStorage.setItem("bjj_students", JSON.stringify(students)); }
 function findIndexById(id){ return students.findIndex(s=>s.id===id); }
 function paidFor(s, mi){ return !!(s.payments && s.payments[mi]); }
+function setActiveTabBtn(){
+  const map = {
+    "Детская":"tabKids",
+    "Взрослая":"tabAdult",
+    "Женская":"tabWomen",
+    "Оплата":"tabPay",
+  };
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+  const id = map[mainTab];
+  if(id) document.getElementById(id).classList.add("active");
+}
+function updateHeader(){
+  document.getElementById("pillMonth").textContent = MONTHS[selectedMonthIndex];
+  document.getElementById("topHint").textContent = (mainTab === "Оплата")
+    ? `Оплата • ${MONTHS[selectedMonthIndex]}`
+    : `Группа: ${mainTab} • ${MONTHS[selectedMonthIndex]}`;
 
-/* === МИГРАЦИЯ СТАРЫХ ДАННЫХ === */
+  document.getElementById("heroPill").innerHTML = `Месяц: <span id="pillMonth">${MONTHS[selectedMonthIndex]}</span>`;
+  document.getElementById("heroTitle").textContent = (mainTab === "Оплата") ? "Оплата" : `${mainTab} группа`;
+  document.getElementById("heroMeta").textContent = `Оплата фиксированная: ${PRICE} ₽ • Учёт по месяцам`;
+}
+
+/* --- migration --- */
 (function migrate(){
   const nowMonth = new Date().getMonth();
   students = students.map(s=>{
@@ -181,11 +622,11 @@ function paidFor(s, mi){ return !!(s.payments && s.payments[mi]); }
   save();
 })();
 
-/* === ВХОД === */
-function checkPin() {
-  if (pinInput.value === PIN) {
-    pinScreen.classList.add("hidden");
-    appScreen.classList.remove("hidden");
+/* --- PIN --- */
+function checkPin(){
+  if(document.getElementById("pinInput").value === PIN){
+    document.getElementById("pinScreen").classList.add("hidden");
+    document.getElementById("appScreen").classList.remove("hidden");
     closeAllModals();
     render();
   } else {
@@ -193,13 +634,17 @@ function checkPin() {
   }
 }
 
-/* === ВКЛАДКИ === */
-function setMainTab(tab){ mainTab = tab; render(); }
-function setPayGroup(g){ payGroupTab = g; render(); }
-function setMonth(v){ selectedMonthIndex = Number(v); render(); }
+/* --- Tabs --- */
+function setMainTab(tab){
+  mainTab = tab;
+  setActiveTabBtn();
+  render();
+}
 
-/* === РЕНДЕР === */
+/* --- Render --- */
 function render(){
+  updateHeader();
+  const list = document.getElementById("list");
   list.innerHTML = "";
 
   if(mainTab === "Оплата"){
@@ -207,64 +652,94 @@ function render(){
     return;
   }
 
-  const filtered = students.filter(s=>s.group === mainTab);
+  const groupList = students.filter(s=>s.group === mainTab);
+  if(groupList.length === 0){
+    list.appendChild(emptyCard(`В группе "${mainTab}" пока нет учеников. Нажмите “＋” чтобы добавить.`));
+    return;
+  }
 
-  const head = document.createElement("div");
-  head.className = "card";
-  head.innerHTML = `<b>${escapeHtml(mainTab)}</b>
-    <div class="small">Статус оплаты за: <b>${MONTHS[selectedMonthIndex]}</b></div>`;
-  list.appendChild(head);
-
-  filtered.forEach(s=>{
+  groupList.forEach(s=>{
     const paid = paidFor(s, selectedMonthIndex);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="title">
+        <b>${escapeHtml(s.name)}</b>
+        <span class="badge">${escapeHtml(s.group)}</span>
+      </div>
 
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <b>${escapeHtml(s.name)}</b><br>
-      ${s.parent ? "Родитель: "+escapeHtml(s.parent)+"<br>" : ""}
-      Тел: ${escapeHtml(s.phone)}<br>
-      ${MONTHS[selectedMonthIndex]}:
-      <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span>
+      <div class="kv">
+        ${s.parent ? `<span class="label">Родитель:</span> <span class="value">${escapeHtml(s.parent)}</span>` : ``}
+      </div>
+
+      <div class="kv" style="margin-top:6px;">
+        <span class="label">Телефон:</span> <span class="value">${escapeHtml(s.phone)}</span>
+      </div>
+
+      <div class="status ${paid ? "ok":"bad"}">
+        ${paid ? "● Оплачено" : "● Не оплачено"} — ${MONTHS[selectedMonthIndex]}
+      </div>
 
       <div class="actions">
-        <button class="pay" onclick="openPay('${s.id}')">Оплата</button>
-        <button class="edit" onclick="openEdit('${s.id}')">Редактировать</button>
-        <button class="delete" onclick="openDelete('${s.id}')">Удалить</button>
+        <button class="btn primary" onclick="openPay('${s.id}')">Оплата</button>
+        <button class="btn edit" onclick="openEdit('${s.id}')">Редактировать</button>
+        <button class="btn danger" onclick="openDelete('${s.id}')">Удалить</button>
       </div>
     `;
-    list.appendChild(div);
+    list.appendChild(card);
   });
 }
 
-/* === ВКЛАДКА ОПЛАТА === */
+function emptyCard(text){
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="title"><b>Пусто</b><span class="badge">INFO</span></div>
+    <div class="small">${escapeHtml(text)}</div>
+  `;
+  return card;
+}
+
+/* --- Payments tab --- */
 function renderPaymentsTab(){
-  const wrap = document.createElement("div");
-  wrap.className = "card";
+  const list = document.getElementById("list");
 
-  const monthOptions = MONTHS.map((m,i)=>`<option value="${i}" ${i===selectedMonthIndex?'selected':''}>${m}</option>`).join("");
-
-  const groupTabs = ["Детская","Взрослая","Женская"].map(g=>`
-    <button onclick="setPayGroup('${g}')" ${g===payGroupTab?'style="background:#111;color:#fff"':''}>${g}</button>
-  `).join("");
-
-  wrap.innerHTML = `
-    <b>Оплата</b>
-    <div class="small">Фиксированная оплата: <b>${PRICE} ₽</b></div>
-
-    <div class="row" style="margin-top:10px;">
-      <div>
-        <div class="small">Месяц</div>
-        <select onchange="setMonth(this.value)">${monthOptions}</select>
-      </div>
+  const control = document.createElement("div");
+  control.className = "card";
+  control.innerHTML = `
+    <div class="title">
+      <b>Оплата</b>
+      <span class="badge">${MONTHS[selectedMonthIndex]}</span>
     </div>
 
-    <div class="small" style="margin-top:10px;">Группа</div>
-    <div class="tabs" style="margin-top:6px;">${groupTabs}</div>
-  `;
-  list.appendChild(wrap);
+    <div class="small">Выберите месяц и группу. Суммы считаются только за выбранный месяц.</div>
 
-  const groupList = students.filter(s=>s.group===payGroupTab);
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1;">
+        <div class="small">Месяц</div>
+        <select id="monthSelect"></select>
+      </div>
+      <div style="flex:1;">
+        <div class="small">Группа</div>
+        <select id="groupSelect">
+          <option>Детская</option>
+          <option>Взрослая</option>
+          <option>Женская</option>
+        </select>
+      </div>
+    </div>
+  `;
+  list.appendChild(control);
+
+  const monthSelect = control.querySelector("#monthSelect");
+  monthSelect.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===selectedMonthIndex?"selected":""}>${m}</option>`).join("");
+  monthSelect.onchange = () => { selectedMonthIndex = Number(monthSelect.value); render(); };
+
+  const groupSelect = control.querySelector("#groupSelect");
+  groupSelect.value = payGroupTab;
+  groupSelect.onchange = () => { payGroupTab = groupSelect.value; render(); };
+
+  const groupList = students.filter(s=>s.group === payGroupTab);
 
   let groupSum = 0;
   let totalSum = 0;
@@ -272,83 +747,113 @@ function renderPaymentsTab(){
   students.forEach(s=>{ if(paidFor(s, selectedMonthIndex)) totalSum += PRICE; });
   groupList.forEach(s=>{ if(paidFor(s, selectedMonthIndex)) groupSum += PRICE; });
 
-  const sumCard = document.createElement("div");
-  sumCard.className = "card";
-  sumCard.innerHTML = `
-    <b>Итоги за ${MONTHS[selectedMonthIndex]}</b><br>
-    Группа "${escapeHtml(payGroupTab)}": <b>${groupSum} ₽</b><br>
-    Общий итог (все группы): <b>${totalSum} ₽</b>
-  `;
-  list.appendChild(sumCard);
-
-  const unpaidList = groupList.filter(s=>!paidFor(s, selectedMonthIndex));
-  const paidList = groupList.filter(s=>paidFor(s, selectedMonthIndex));
-
-  const unpaidCard = document.createElement("div");
-  unpaidCard.className = "card";
-  unpaidCard.innerHTML = `<b>Не оплатили</b><div class="small">${MONTHS[selectedMonthIndex]}</div>` +
-    (unpaidList.length ? "" : `<div class="small">Все оплатили ✅</div>`);
-  list.appendChild(unpaidCard);
-
-  unpaidList.forEach(s=>list.appendChild(studentPayCard(s)));
-
-  const paidCard = document.createElement("div");
-  paidCard.className = "card";
-  paidCard.innerHTML = `<b>Оплатили</b><div class="small">${MONTHS[selectedMonthIndex]}</div>` +
-    (paidList.length ? "" : `<div class="small">Пока нет оплат</div>`);
-  list.appendChild(paidCard);
-
-  paidList.forEach(s=>list.appendChild(studentPayCard(s)));
-}
-
-function studentPayCard(s){
-  const paid = paidFor(s, selectedMonthIndex);
-  const div = document.createElement("div");
-  div.className = "card";
-  div.innerHTML = `
-    <b>${escapeHtml(s.name)}</b><br>
-    ${s.parent ? "Родитель: "+escapeHtml(s.parent)+"<br>" : ""}
-    Тел: ${escapeHtml(s.phone)}<br>
-    ${MONTHS[selectedMonthIndex]}:
-    <span class="${paid?'paid':'unpaid'}">${paid?'Оплачено':'Не оплачено'}</span>
-
-    <div class="actions">
-      <button class="pay" onclick="openPay('${s.id}')">${paid?'Снять':'Оплатил'}</button>
-      <button class="edit" onclick="openEdit('${s.id}')">Редактировать</button>
-      <button class="delete" onclick="openDelete('${s.id}')">Удалить</button>
+  const summary = document.createElement("div");
+  summary.className = "card";
+  summary.innerHTML = `
+    <div class="title">
+      <b>Итоги</b>
+      <span class="badge">${escapeHtml(payGroupTab)}</span>
+    </div>
+    <div class="small">Фиксированная оплата: <b>${PRICE} ₽</b></div>
+    <div class="row" style="margin-top:10px;">
+      <div class="status ok" style="justify-content:center;">Группа: <b style="margin-left:6px;">${groupSum} ₽</b></div>
+      <div class="status ok" style="justify-content:center;">Всего: <b style="margin-left:6px;">${totalSum} ₽</b></div>
     </div>
   `;
-  return div;
+  list.appendChild(summary);
+
+  if(groupList.length === 0){
+    list.appendChild(emptyCard(`В группе "${payGroupTab}" нет учеников. Нажмите “＋” чтобы добавить.`));
+    return;
+  }
+
+  const unpaid = groupList.filter(s=>!paidFor(s, selectedMonthIndex));
+  const paid = groupList.filter(s=>paidFor(s, selectedMonthIndex));
+
+  list.appendChild(sectionCard("Не оплатили", unpaid.length ? `${unpaid.length} чел.` : "Все оплатили ✅"));
+  unpaid.forEach(s=> list.appendChild(payStudentCard(s)));
+
+  list.appendChild(sectionCard("Оплатили", paid.length ? `${paid.length} чел.` : "Пока нет оплат"));
+  paid.forEach(s=> list.appendChild(payStudentCard(s)));
 }
 
-/* === ДОБАВЛЕНИЕ === */
+function sectionCard(title, subtitle){
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="title"><b>${escapeHtml(title)}</b><span class="badge">${escapeHtml(subtitle)}</span></div>
+    <div class="small">${MONTHS[selectedMonthIndex]}</div>
+  `;
+  return card;
+}
+
+function payStudentCard(s){
+  const paid = paidFor(s, selectedMonthIndex);
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="title">
+      <b>${escapeHtml(s.name)}</b>
+      <span class="badge">${escapeHtml(s.group)}</span>
+    </div>
+
+    ${s.parent ? `<div class="kv"><span class="label">Родитель:</span> <span class="value">${escapeHtml(s.parent)}</span></div>` : ``}
+    <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value">${escapeHtml(s.phone)}</span></div>
+
+    <div class="status ${paid ? "ok":"bad"}">
+      ${paid ? "● Оплачено" : "● Не оплачено"} — ${MONTHS[selectedMonthIndex]}
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" onclick="openPay('${s.id}')">${paid ? "Изменить" : "Оплата"}</button>
+      <button class="btn edit" onclick="openEdit('${s.id}')">Редактировать</button>
+      <button class="btn danger" onclick="openDelete('${s.id}')">Удалить</button>
+    </div>
+  `;
+  return card;
+}
+
+/* --- Add modal --- */
 function openAdd(){
   const addGroup = (mainTab === "Оплата") ? payGroupTab : mainTab;
   modalAdd.dataset.addGroup = addGroup;
 
-  addGroupLabel.textContent = addGroup;
-  addParentFields.style.display = (addGroup === "Детская") ? "block" : "none";
-  addStudentName.placeholder = (addGroup === "Детская") ? "ФИО ученика" : "ФИО спортсмена";
+  document.getElementById("addGroupLabel").textContent = addGroup;
 
-  modalAdd.classList.remove("hidden");
+  const addParentBox = document.getElementById("addParentBox");
+  const addNameLabel = document.getElementById("addNameLabel");
+  const addStudentName = document.getElementById("addStudentName");
+
+  if(addGroup === "Детская"){
+    addParentBox.classList.remove("hidden");
+    addNameLabel.textContent = "ФИО ученика";
+    addStudentName.placeholder = "ФИО ребёнка";
+  } else {
+    addParentBox.classList.add("hidden");
+    addNameLabel.textContent = "ФИО спортсмена";
+    addStudentName.placeholder = "ФИО спортсмена";
+    document.getElementById("addParentName").value = "";
+  }
+
+  document.getElementById("modalAdd").classList.remove("hidden");
 }
-function closeAdd(){ modalAdd.classList.add("hidden"); }
+function closeAdd(){ document.getElementById("modalAdd").classList.add("hidden"); }
 
 function saveNewStudent(){
   const addGroup = modalAdd.dataset.addGroup || "Детская";
-  const parent = addParentName.value.trim();
-  const phoneVal = addPhone.value.trim();
-  const nameVal = addStudentName.value.trim();
+  const parent = document.getElementById("addParentName").value.trim();
+  const phone = document.getElementById("addPhone").value.trim();
+  const name  = document.getElementById("addStudentName").value.trim();
 
-  if(addGroup === "Детская" && (!parent || !nameVal)){
+  if(addGroup === "Детская" && (!parent || !name)){
     alert("Для детской группы заполните ФИО родителя и ФИО ученика.");
     return;
   }
-  if(addGroup !== "Детская" && !nameVal){
+  if(addGroup !== "Детская" && !name){
     alert("Заполните ФИО спортсмена.");
     return;
   }
-  if(!phoneVal){
+  if(!phone){
     alert("Заполните телефон.");
     return;
   }
@@ -357,23 +862,24 @@ function saveNewStudent(){
     id: uid(),
     group: addGroup,
     parent: addGroup === "Детская" ? parent : "",
-    phone: phoneVal,
-    name: nameVal,
+    phone,
+    name,
     payments: {}
   });
 
-  addParentName.value = "";
-  addPhone.value = "";
-  addStudentName.value = "";
+  document.getElementById("addParentName").value = "";
+  document.getElementById("addPhone").value = "";
+  document.getElementById("addStudentName").value = "";
 
   save();
   closeAdd();
   render();
 }
 
-/* === ОПЛАТА (модалка + выбор месяца + исправление) === */
+/* --- Pay modal (with month selection) --- */
 function fillPayMonthSelect(selected){
-  payMonthSelect.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?'selected':''}>${m}</option>`).join("");
+  const sel = document.getElementById("payMonthSelect");
+  sel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
 }
 
 function openPay(id){
@@ -381,131 +887,141 @@ function openPay(id){
   const idx = findIndexById(id);
   if(idx === -1) return;
 
-  // заполнить месяцы и выбрать текущий (экранный) месяц
+  const s = students[idx];
   fillPayMonthSelect(selectedMonthIndex);
 
-  const s = students[idx];
-  const paid = paidFor(s, selectedMonthIndex);
-  payPrompt.textContent = `Ученик: "${s.name}". Сейчас за ${MONTHS[selectedMonthIndex]}: ${paid ? "ОПЛАЧЕНО" : "НЕ ОПЛАЧЕНО"}. Выберите месяц и подтвердите.`;
+  const prompt = document.getElementById("payPrompt");
+  const sel = document.getElementById("payMonthSelect");
 
-  // ✅ при смене месяца в модалке обновляем подсказку
-  payMonthSelect.onchange = () => {
-    const mi = Number(payMonthSelect.value);
-    const paid2 = paidFor(s, mi);
-    payPrompt.textContent = `Ученик: "${s.name}". Сейчас за ${MONTHS[mi]}: ${paid2 ? "ОПЛАЧЕНО" : "НЕ ОПЛАЧЕНО"}. Выберите месяц и подтвердите.`;
+  const setPrompt = (mi) => {
+    const paid = paidFor(s, mi);
+    prompt.innerHTML = `Ученик: <b>${escapeHtml(s.name)}</b><br><span class="small">Статус за ${MONTHS[mi]}: <b style="color:${paid? "var(--ok)":"var(--danger)"}">${paid?"ОПЛАЧЕНО":"НЕ ОПЛАЧЕНО"}</b></span>`;
   };
 
-  modalPay.classList.remove("hidden");
+  setPrompt(selectedMonthIndex);
+
+  sel.onchange = () => setPrompt(Number(sel.value));
+
+  document.getElementById("modalPay").classList.remove("hidden");
 }
 
-function confirmPay(v){
+function confirmPay(value){
   const idx = findIndexById(payId);
   if(idx === -1){ closePay(); return; }
 
-  const mi = Number(payMonthSelect.value);
-
+  const mi = Number(document.getElementById("payMonthSelect").value);
   if(!students[idx].payments) students[idx].payments = {};
-  students[idx].payments[mi] = v;
+  students[idx].payments[mi] = value;
 
-  // ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ:
-  // переключаем отображаемый месяц на выбранный в модалке,
-  // чтобы сразу было видно изменения
+  // ключевое: переключаем отображаемый месяц на выбранный в модалке
   selectedMonthIndex = mi;
 
   save();
   closePay();
   render();
 }
-
 function closePay(){
-  modalPay.classList.add("hidden");
+  document.getElementById("modalPay").classList.add("hidden");
   payId = null;
 }
 
-/* === РЕДАКТИРОВАНИЕ === */
+/* --- Edit modal --- */
+document.getElementById("editGroup").addEventListener("change", ()=>{
+  const g = document.getElementById("editGroup").value;
+  const box = document.getElementById("editParentBox");
+  if(g === "Детская") box.classList.remove("hidden");
+  else {
+    box.classList.add("hidden");
+    document.getElementById("editParentName").value = "";
+  }
+});
+
 function openEdit(id){
   editId = id;
   const idx = findIndexById(id);
   if(idx === -1) return;
 
   const s = students[idx];
-  editGroup.value = s.group;
-  editPhone.value = s.phone;
-  editName.value = s.name;
-  editParentName.value = s.parent || "";
+  document.getElementById("editSub").innerHTML = `Редактирование: <b>${escapeHtml(s.name)}</b>`;
+  document.getElementById("editGroup").value = s.group;
+  document.getElementById("editPhone").value = s.phone || "";
+  document.getElementById("editName").value  = s.name || "";
+  document.getElementById("editParentName").value = s.parent || "";
 
-  editParentFields.style.display = (s.group === "Детская") ? "block" : "none";
+  const box = document.getElementById("editParentBox");
+  if(s.group === "Детская") box.classList.remove("hidden");
+  else box.classList.add("hidden");
 
-  modalEdit.classList.remove("hidden");
+  document.getElementById("modalEdit").classList.remove("hidden");
 }
-
-editGroup.addEventListener("change", ()=>{
-  const g = editGroup.value;
-  editParentFields.style.display = (g === "Детская") ? "block" : "none";
-  if(g !== "Детская") editParentName.value = "";
-});
 
 function saveEdit(){
   const idx = findIndexById(editId);
   if(idx === -1){ closeEdit(); return; }
 
-  const g = editGroup.value;
-  const phoneVal = editPhone.value.trim();
-  const nameVal = editName.value.trim();
-  const parentVal = editParentName.value.trim();
+  const g = document.getElementById("editGroup").value;
+  const phone = document.getElementById("editPhone").value.trim();
+  const name  = document.getElementById("editName").value.trim();
+  const parent= document.getElementById("editParentName").value.trim();
 
-  if(!phoneVal){ alert("Заполните телефон."); return; }
-  if(!nameVal){ alert("Заполните ФИО."); return; }
-  if(g === "Детская" && !parentVal){ alert("Для детской группы заполните ФИО родителя."); return; }
+  if(!phone){ alert("Заполните телефон."); return; }
+  if(!name){ alert("Заполните ФИО."); return; }
+  if(g === "Детская" && !parent){ alert("Для детской группы заполните ФИО родителя."); return; }
 
   students[idx].group = g;
-  students[idx].phone = phoneVal;
-  students[idx].name = nameVal;
-  students[idx].parent = (g === "Детская") ? parentVal : "";
+  students[idx].phone = phone;
+  students[idx].name  = name;
+  students[idx].parent= (g === "Детская") ? parent : "";
+
+  // если поменяли группу — пусть вкладка обновится понятнее
+  if(mainTab !== "Оплата" && mainTab !== g){
+    mainTab = g;
+    setActiveTabBtn();
+  }
 
   save();
   closeEdit();
   render();
 }
 function closeEdit(){
-  modalEdit.classList.add("hidden");
+  document.getElementById("modalEdit").classList.add("hidden");
   editId = null;
 }
 
-/* === УДАЛЕНИЕ === */
+/* --- Delete modal --- */
 function openDelete(id){
   delId = id;
   const idx = findIndexById(id);
   if(idx === -1) return;
 
-  deletePrompt.textContent = `Удалить ученика "${students[idx].name}"?`;
-  modalDelete.classList.remove("hidden");
+  document.getElementById("deletePrompt").innerHTML = `Удалить ученика <b>${escapeHtml(students[idx].name)}</b>?`;
+  document.getElementById("modalDelete").classList.remove("hidden");
 }
 function confirmDelete(){
   const idx = findIndexById(delId);
   if(idx === -1){ closeDelete(); return; }
 
-  students.splice(idx,1);
+  students.splice(idx, 1);
   save();
   closeDelete();
   render();
 }
 function closeDelete(){
-  modalDelete.classList.add("hidden");
+  document.getElementById("modalDelete").classList.add("hidden");
   delId = null;
 }
 
-/* === ОБЩЕЕ === */
+/* --- common --- */
 function closeAllModals(){
-  modalAdd.classList.add("hidden");
-  modalPay.classList.add("hidden");
-  modalEdit.classList.add("hidden");
-  modalDelete.classList.add("hidden");
+  document.getElementById("modalAdd").classList.add("hidden");
+  document.getElementById("modalPay").classList.add("hidden");
+  document.getElementById("modalEdit").classList.add("hidden");
+  document.getElementById("modalDelete").classList.add("hidden");
 }
 
-/* === СТАРТ === */
+setActiveTabBtn();
+updateHeader();
 closeAllModals();
 </script>
-
 </body>
 </html>
