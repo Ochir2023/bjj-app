@@ -8,66 +8,28 @@
 <style>
 body { margin:0; font-family:Arial; background:#f2f2f2 }
 .hidden { display:none !important }
-
-/* экраны */
 .screen { padding:20px }
 
-/* header */
-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:6px;
-}
-.tabs {
-  display:flex;
-  gap:6px;
-}
-.tabs button {
-  padding:6px 8px;
-  font-size:13px;
-}
-.plus {
-  font-size:22px;
-  padding:4px 10px;
-}
+header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.tabs { display:flex; flex-wrap:wrap; gap:6px; }
+.tabs button { padding:6px 8px; font-size:13px; }
 
-/* карточки */
-.card {
-  background:#fff;
-  padding:12px;
-  border-radius:10px;
-  margin-top:10px;
-}
+.plus { font-size:22px; padding:4px 10px; }
 
-/* модалки */
-.modal {
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.5);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.modal-content {
-  background:#fff;
-  padding:16px;
-  border-radius:12px;
-  width:90%;
-  max-width:320px;
-}
-.modal-content input, button {
-  width:100%;
-  margin-top:8px;
-  padding:8px;
-}
-.actions {
-  display:flex;
-  gap:6px;
-}
-.delete { background:#b00020; color:#fff }
-.paid { color:green; font-weight:bold }
-.unpaid { color:red; font-weight:bold }
+.card { background:#fff; padding:12px; border-radius:10px; margin-top:10px; }
+
+.modal { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; }
+.modal-content { background:#fff; padding:16px; border-radius:12px; width:90%; max-width:320px; }
+.modal-content input, .modal-content button, .modal-content select { width:100%; margin-top:8px; padding:8px; }
+
+.actions { display:flex; gap:6px; margin-top:8px; }
+.actions button { flex:1; }
+
+.delete { background:#b00020; color:#fff; border:none; }
+.pay { background:#111; color:#fff; border:none; }
+
+.paid { color:green; font-weight:bold; }
+.unpaid { color:red; font-weight:bold; }
 </style>
 </head>
 
@@ -100,12 +62,16 @@ header {
   <div class="modal-content">
     <h3>Добавить</h3>
 
+    <div class="card" style="margin:0; padding:8px;">
+      <div style="font-size:12px;color:#555;">Группа записи: <b id="groupLabel">Детская</b></div>
+    </div>
+
     <div id="parentFields">
       <input id="parentName" placeholder="ФИО родителя">
     </div>
 
     <input id="phone" placeholder="Телефон">
-    <input id="studentName" placeholder="ФИО ученика">
+    <input id="studentName" placeholder="ФИО ученика/спортсмена">
 
     <button onclick="saveStudent()">Сохранить</button>
     <button onclick="closeAdd()">Отмена</button>
@@ -115,7 +81,7 @@ header {
 <!-- МОДАЛКА ОПЛАТЫ -->
 <div id="modalPay" class="modal hidden">
   <div class="modal-content">
-    <p>Отметить оплату?</p>
+    <p id="payPrompt">Отметить оплату?</p>
     <button onclick="confirmPay(true)">Оплатил</button>
     <button onclick="confirmPay(false)">Не оплатил</button>
     <button onclick="closePay()">Отмена</button>
@@ -125,7 +91,7 @@ header {
 <!-- МОДАЛКА УДАЛЕНИЯ -->
 <div id="modalDelete" class="modal hidden">
   <div class="modal-content">
-    <p>Удалить ученика?</p>
+    <p id="deletePrompt">Удалить ученика?</p>
     <button class="delete" onclick="confirmDelete()">Удалить</button>
     <button onclick="closeDelete()">Отмена</button>
   </div>
@@ -141,8 +107,19 @@ const PRICE = 3000;
 /* === СОСТОЯНИЕ === */
 let group = "Детская";
 let students = JSON.parse(localStorage.getItem("bjj_students")) || [];
-let payIndex = null;
-let delIndex = null;
+
+/* миграция старых записей: добавим id и payments */
+students = students.map(s => ({
+  id: s.id || (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2))),
+  group: s.group || "Детская",
+  parent: s.parent || "",
+  phone: s.phone || "",
+  name: s.name || s.student || "",
+  paid: !!s.paid
+}));
+
+let payId = null;
+let delId = null;
 
 /* === ЭЛЕМЕНТЫ === */
 const pinScreen = document.getElementById("pinScreen");
@@ -152,6 +129,10 @@ const list = document.getElementById("list");
 const modalAdd = document.getElementById("modalAdd");
 const modalPay = document.getElementById("modalPay");
 const modalDelete = document.getElementById("modalDelete");
+
+function save(){
+  localStorage.setItem("bjj_students", JSON.stringify(students));
+}
 
 /* === ВХОД === */
 function checkPin() {
@@ -171,6 +152,11 @@ function setGroup(g) {
   render();
 }
 
+/* === ПОИСК ПО ID === */
+function findIndexById(id){
+  return students.findIndex(s => s.id === id);
+}
+
 /* === РЕНДЕР === */
 function render() {
   list.innerHTML = "";
@@ -180,94 +166,156 @@ function render() {
     return;
   }
 
-  students.filter(s => s.group === group).forEach((s,i)=>{
+  const filtered = students.filter(s => s.group === group);
+
+  filtered.forEach((s) => {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
-      <b>${s.name}</b><br>
-      ${s.parent ? "Родитель: "+s.parent+"<br>" : ""}
-      Тел: ${s.phone}<br>
-      <span class="${s.paid?'paid':'unpaid'}">
-        ${s.paid?'Оплачено':'Не оплачено'}
+      <b>${escapeHtml(s.name)}</b><br>
+      ${s.parent ? "Родитель: " + escapeHtml(s.parent) + "<br>" : ""}
+      Тел: ${escapeHtml(s.phone)}<br>
+      <span class="${s.paid ? 'paid' : 'unpaid'}">
+        ${s.paid ? 'Оплачено' : 'Не оплачено'}
       </span>
+
       <div class="actions">
-        <button onclick="openPay(${i})">Оплата</button>
-        <button class="delete" onclick="openDelete(${i})">Удалить</button>
+        <button class="pay" onclick="openPay('${s.id}')">Оплата</button>
+        <button class="delete" onclick="openDelete('${s.id}')">Удалить</button>
       </div>
     `;
     list.appendChild(div);
   });
+
+  save();
 }
 
 /* === ДОБАВЛЕНИЕ === */
 function openAdd() {
+  groupLabel.textContent = group;
   parentFields.style.display = (group === "Детская") ? "block" : "none";
+  studentName.placeholder = (group === "Детская") ? "ФИО ученика" : "ФИО спортсмена";
   modalAdd.classList.remove("hidden");
 }
 function closeAdd(){ modalAdd.classList.add("hidden"); }
 
 function saveStudent() {
+  const parent = parentName.value.trim();
+  const phoneVal = phone.value.trim();
+  const nameVal = studentName.value.trim();
+
+  if(group === "Детская" && (!parent || !nameVal)){
+    alert("Для детской группы заполните ФИО родителя и ФИО ученика.");
+    return;
+  }
+  if(group !== "Детская" && !nameVal){
+    alert("Заполните ФИО спортсмена.");
+    return;
+  }
+
   students.push({
+    id: crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)),
     group,
-    parent: group==="Детская"?parentName.value:"",
-    phone: phone.value,
-    name: studentName.value,
-    paid:false
+    parent: group === "Детская" ? parent : "",
+    phone: phoneVal,
+    name: nameVal,
+    paid: false
   });
+
+  parentName.value = "";
+  phone.value = "";
+  studentName.value = "";
+
   save();
   closeAdd();
   render();
 }
 
 /* === ОПЛАТА === */
-function openPay(i){ payIndex=i; modalPay.classList.remove("hidden"); }
+function openPay(id){
+  payId = id;
+  const idx = findIndexById(id);
+  if(idx === -1) return;
+
+  payPrompt.textContent = `Отметить оплату: "${students[idx].name}"?`;
+  modalPay.classList.remove("hidden");
+}
+
 function confirmPay(v){
-  students[payIndex].paid=v;
+  const idx = findIndexById(payId);
+  if(idx === -1) { closePay(); return; }
+
+  students[idx].paid = v;
   save();
   closePay();
   render();
 }
-function closePay(){ modalPay.classList.add("hidden"); }
+function closePay(){ modalPay.classList.add("hidden"); payId = null; }
 
 /* === УДАЛЕНИЕ === */
-function openDelete(i){ delIndex=i; modalDelete.classList.remove("hidden"); }
+function openDelete(id){
+  delId = id;
+  const idx = findIndexById(id);
+  if(idx === -1) return;
+
+  deletePrompt.textContent = `Удалить ученика "${students[idx].name}"?`;
+  modalDelete.classList.remove("hidden");
+}
+
 function confirmDelete(){
-  students.splice(delIndex,1);
+  const idx = findIndexById(delId);
+  if(idx === -1) { closeDelete(); return; }
+
+  students.splice(idx,1);
   save();
   closeDelete();
   render();
 }
-function closeDelete(){ modalDelete.classList.add("hidden"); }
+function closeDelete(){ modalDelete.classList.add("hidden"); delId = null; }
 
-/* === ОПЛАТА ВКЛАДКА === */
+/* === ВКЛАДКА ОПЛАТА (сводка по группам) === */
 function renderPayments(){
   let html = "";
   ["Детская","Взрослая","Женская"].forEach(g=>{
-    let sum=0;
-    html += `<div class="card"><b>${g}</b><br>`;
-    students.filter(s=>s.group===g).forEach(s=>{
-      if(s.paid) sum+=PRICE;
-      html+=`${s.name}: ${s.paid?'✔':'✖'}<br>`;
-    });
-    html+=`Итого: ${sum} ₽</div>`;
+    let sum = 0;
+    const rows = students.filter(s=>s.group===g).map(s=>{
+      if(s.paid) sum += PRICE;
+      return `<div style="margin-top:6px;">
+        <b>${escapeHtml(s.name)}</b> — <span class="${s.paid?'paid':'unpaid'}">${s.paid?'✔ Оплачено':'✖ Не оплачено'}</span>
+        <div class="actions">
+          <button class="pay" onclick="openPay('${s.id}')">${s.paid?'Снять':'Оплатил'}</button>
+          <button class="delete" onclick="openDelete('${s.id}')">Удалить</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    html += `<div class="card">
+      <b>${g}</b><br>
+      <div style="margin-top:6px;">Итого за группу: <b>${sum} ₽</b></div>
+      ${rows || "<div style='margin-top:6px;color:#666;'>Нет учеников</div>"}
+    </div>`;
   });
+
   list.innerHTML = html;
 }
 
-/* === ХРАНЕНИЕ === */
-function save(){
-  localStorage.setItem("bjj_students", JSON.stringify(students));
-}
-
-/* === ЗАКРЫТЬ ВСЁ === */
+/* === ОБЩЕЕ === */
 function closeAllModals(){
   modalAdd.classList.add("hidden");
   modalPay.classList.add("hidden");
   modalDelete.classList.add("hidden");
 }
 
+/* защита от вставки HTML */
+function escapeHtml(str){
+  return String(str ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
 /* === СТАРТ === */
 closeAllModals();
+save();
 </script>
 
 </body>
