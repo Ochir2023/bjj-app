@@ -24,22 +24,56 @@ function setGroup(group) {
   render();
 }
 
-function render() {
+function render(){
+  updateHeader();
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  students
-    .filter(s => s.group === currentGroup)
-    .forEach((s, i) => {
-      const div = document.createElement("div");
-      div.innerHTML = `
-        <strong>${s.student}</strong><br>
-        ${s.parent ? "Родитель: " + s.parent + "<br>" : ""}
-        Телефон: ${s.phone}<br>
-        <button onclick="askDelete(${i})">Удалить</button>
-      `;
-      list.appendChild(div);
-    });
+  // вкладка "Оплата" остаётся отдельной
+  if(mainTab === "Оплата"){
+    renderPaymentsTab();
+    return;
+  }
+
+  // делаем список плитками
+  list.classList.add("students-grid");
+
+  const groupList = students.filter(s=>s.group === mainTab);
+  if(groupList.length === 0){
+    list.appendChild(emptyCard(`В группе "${mainTab}" пока нет учеников. Нажмите “＋” чтобы добавить.`));
+    return;
+  }
+
+  groupList.forEach(s=>{
+    const v = monthStatusValue(s, selectedMonthIndex);
+    const cls = statusClass(v); // ok / warn / bad
+
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.onclick = () => openInfo(s.id);
+
+    // набор маленьких иконок: телефон, тариф, родитель(если есть)
+    const phoneIcon = `<span class="ico muted" title="Телефон">📞</span>`;
+    const rateIcon  = `<span class="ico gold" title="Тариф">${s.rate === 1500 ? "₽1500" : "₽3000"}</span>`;
+    const parentIcon = s.parent ? `<span class="ico muted" title="Родитель">👪</span>` : "";
+
+    tile.innerHTML = `
+      <div class="tile-top">
+        <div class="tile-name">${escapeHtml(s.name)}</div>
+        <div class="status-dot ${cls}" title="${escapeHtml(statusLabel(v))}"></div>
+      </div>
+
+      <div class="tile-icons">
+        ${phoneIcon}
+        ${rateIcon}
+        ${parentIcon}
+        <span class="badge-mini">${MONTHS[selectedMonthIndex]}</span>
+      </div>
+    `;
+
+    list.appendChild(tile);
+  });
+}
 
   localStorage.setItem("students", JSON.stringify(students));
 }
