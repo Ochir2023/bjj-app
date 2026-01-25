@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bjj-app-v1';
+const CACHE_NAME = 'bjj-app-v2';
 
 const FILES = [
   './',
