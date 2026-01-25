@@ -248,6 +248,117 @@ select{
 .split{ display:grid; grid-template-columns: 1fr; gap:10px; margin-top: 10px; }
 @media (min-width: 620px){ .split{ grid-template-columns: 1fr 1fr; } }
 hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
+
+/* ===== Compact Payments UI ===== */
+.pay-toolbar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+.pay-toolbar .field{ flex:1; min-width: 160px; }
+.pay-kpis{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.03);
+  font-size:12px;
+  color: var(--text);
+}
+.chip b{ color: var(--gold); font-weight:700; }
+
+details.pay-section{
+  border:1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(21,24,38,.90), rgba(17,19,26,.92));
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  padding: 10px;
+}
+details.pay-section + details.pay-section{ margin-top:10px; }
+details.pay-section summary{
+  cursor:pointer;
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+details.pay-section summary::-webkit-details-marker{ display:none; }
+.pay-section-title{
+  display:flex; align-items:center; gap:10px;
+  text-transform:uppercase;
+  letter-spacing:.35px;
+  font-size:13px;
+}
+.dot{
+  width:8px; height:8px; border-radius:50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.04);
+}
+.dot.ok{ background: var(--ok); }
+.dot.warn{ background: var(--warn); }
+.count{ color: var(--muted); font-size:12px; }
+
+.pay-list{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+.pay-row{
+  border:1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(0,0,0,.18);
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.pay-main{ flex:1; min-width: 0; }
+.pay-name{
+  font-size:13px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.pay-sub{
+  margin-top:4px;
+  font-size:12px;
+  color: var(--muted);
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.badge-mini{
+  font-size:11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border:1px solid var(--line);
+  color: var(--muted);
+}
+.state{
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  white-space:nowrap;
+}
+.state.ok{ border-color: rgba(61,220,151,.30); color: rgba(61,220,151,.95); }
+.state.bad{ border-color: rgba(255,77,109,.30); color: rgba(255,77,109,.95); }
+.state.warn{ border-color: rgba(240,194,75,.35); color: rgba(240,194,75,.98); }
+
+.pay-actions{ display:flex; gap:8px; }
+.pay-actions .mini{
+  flex:0 0 auto;
+  padding:8px 10px;
+  border-radius: 12px;
+  font-size:12px;
+}
 </style>
 </head>
 
@@ -613,57 +724,52 @@ function render(){
   });
 }
 
-/* Payments tab */
-function sectionCard(title, subtitle){
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="title"><b>${escapeHtml(title)}</b><span class="badge">${escapeHtml(subtitle)}</span></div>
-    <div class="small">${MONTHS[selectedMonthIndex]}</div>
-  `;
-  return card;
-}
-
+/* ===== Compact payments UI ===== */
 function payStudentCard(s){
   const v = monthStatusValue(s, selectedMonthIndex);
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="title">
-      <b>${escapeHtml(s.name)}</b>
-      <span class="badge">${escapeHtml(s.group)} • тариф ${s.rate} ₽</span>
-    </div>
-    ${s.parent ? `<div class="kv"><span class="label">Родитель:</span> <span class="value">${escapeHtml(s.parent)}</span></div>` : ``}
-    <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value">${escapeHtml(s.phone)}</span></div>
+  const cls = statusClass(v);
+  const label = statusLabel(v);
 
-    <div class="status ${statusClass(v)}">
-      ● ${statusLabel(v)} — ${MONTHS[selectedMonthIndex]}
+  const row = document.createElement("div");
+  row.className = "pay-row";
+
+  row.innerHTML = `
+    <div class="pay-main">
+      <div class="pay-name">${escapeHtml(s.name)}</div>
+      <div class="pay-sub">
+        <span class="badge-mini">${escapeHtml(s.group)}</span>
+        <span class="badge-mini">тариф ${s.rate} ₽</span>
+        ${s.parent ? `<span class="badge-mini">родитель: ${escapeHtml(s.parent)}</span>` : ``}
+        <span class="badge-mini">тел: ${escapeHtml(s.phone)}</span>
+      </div>
     </div>
 
-    <div class="actions">
-      <button class="btn primary" onclick="openPay('${s.id}')">Изменить</button>
-      <button class="btn edit" onclick="openEdit('${s.id}')">Редактировать</button>
-      <button class="btn danger" onclick="openDelete('${s.id}')">Удалить</button>
+    <div class="state ${cls}">${escapeHtml(label)}</div>
+
+    <div class="pay-actions">
+      <button class="btn primary mini" onclick="openPay('${s.id}')">Оплата</button>
+      <button class="btn edit mini" onclick="openEdit('${s.id}')">Ред.</button>
+      <button class="btn danger mini" onclick="openDelete('${s.id}')">Удал.</button>
     </div>
   `;
-  return card;
+  return row;
 }
 
 function renderPaymentsTab(){
   const list = document.getElementById("list");
 
+  // toolbar
   const control = document.createElement("div");
   control.className = "card";
   control.innerHTML = `
     <div class="title"><b>Оплата</b><span class="badge">${MONTHS[selectedMonthIndex]}</span></div>
-    <div class="small">Статусы: 3000 ₽ / 1500 ₽ / <b style="color:var(--warn)">не ходил</b> / не оплатил</div>
 
-    <div class="split">
-      <div>
+    <div class="pay-toolbar" style="margin-top:10px;">
+      <div class="field">
         <div class="small">Месяц</div>
         <select id="monthSelect"></select>
       </div>
-      <div>
+      <div class="field">
         <div class="small">Группа</div>
         <select id="groupSelect">
           <option>Детская</option>
@@ -671,6 +777,12 @@ function renderPaymentsTab(){
           <option>Женская</option>
         </select>
       </div>
+    </div>
+
+    <div class="pay-kpis" id="kpis"></div>
+
+    <div class="small" style="margin-top:10px;">
+      Статусы: <b>3000 ₽</b> / <b>1500 ₽</b> / <b style="color:var(--warn)">не ходил</b> / не оплатил
     </div>
   `;
   list.appendChild(control);
@@ -691,35 +803,69 @@ function renderPaymentsTab(){
   students.forEach(s=> totalSum += incomeFromStatus(monthStatusValue(s, selectedMonthIndex)));
   groupList.forEach(s=> groupSum += incomeFromStatus(monthStatusValue(s, selectedMonthIndex)));
 
-  const summary = document.createElement("div");
-  summary.className = "card";
-  summary.innerHTML = `
-    <div class="title"><b>Итоги</b><span class="badge">${escapeHtml(payGroupTab)}</span></div>
-    <div class="small">Доход учитывает только оплаты (1500/3000). “Не ходил” = 0 ₽.</div>
-    <div style="margin-top:10px;" class="kv">
-      <span class="label">Группа:</span><span class="value"><b>${groupSum} ₽</b></span>
-      <span class="label">Всего:</span><span class="value"><b>${totalSum} ₽</b></span>
-    </div>
+  const notPaid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === 0);
+  const notCame = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === -1);
+  const paid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) > 0);
+
+  // KPIs
+  const kpis = control.querySelector("#kpis");
+  kpis.innerHTML = `
+    <span class="chip">Группа: <b>${groupSum} ₽</b></span>
+    <span class="chip">Всего: <b>${totalSum} ₽</b></span>
+    <span class="chip">Не оплатили: <b>${notPaid.length}</b></span>
+    <span class="chip" style="border-color: rgba(240,194,75,.35);">Не ходили: <b>${notCame.length}</b></span>
+    <span class="chip" style="border-color: rgba(61,220,151,.30);">Оплатили: <b>${paid.length}</b></span>
   `;
-  list.appendChild(summary);
 
   if(groupList.length === 0){
     list.appendChild(emptyCard(`В группе "${payGroupTab}" нет учеников. Нажмите “＋” чтобы добавить.`));
     return;
   }
 
-  const notPaid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === 0);
-  const notCame = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === -1);
-  const paid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) > 0);
+  const sec1 = document.createElement("details");
+  sec1.className = "pay-section";
+  sec1.open = true;
+  sec1.innerHTML = `
+    <summary>
+      <div class="pay-section-title"><span class="dot"></span> Не оплатили</div>
+      <div class="count">${notPaid.length} чел.</div>
+    </summary>
+    <div class="pay-list" id="secNotPaid"></div>
+  `;
+  list.appendChild(sec1);
+  const secNotPaid = sec1.querySelector("#secNotPaid");
+  if(notPaid.length) notPaid.forEach(s=> secNotPaid.appendChild(payStudentCard(s)));
+  else secNotPaid.innerHTML = `<div class="small">Нет</div>`;
 
-  list.appendChild(sectionCard("Не оплатили", notPaid.length ? `${notPaid.length} чел.` : "Нет"));
-  notPaid.forEach(s=> list.appendChild(payStudentCard(s)));
+  const sec2 = document.createElement("details");
+  sec2.className = "pay-section";
+  sec2.open = false;
+  sec2.innerHTML = `
+    <summary>
+      <div class="pay-section-title"><span class="dot warn"></span> Не ходили</div>
+      <div class="count">${notCame.length} чел.</div>
+    </summary>
+    <div class="pay-list" id="secNotCame"></div>
+  `;
+  list.appendChild(sec2);
+  const secNotCame = sec2.querySelector("#secNotCame");
+  if(notCame.length) notCame.forEach(s=> secNotCame.appendChild(payStudentCard(s)));
+  else secNotCame.innerHTML = `<div class="small">Нет</div>`;
 
-  list.appendChild(sectionCard("Не ходили", notCame.length ? `${notCame.length} чел.` : "Нет"));
-  notCame.forEach(s=> list.appendChild(payStudentCard(s)));
-
-  list.appendChild(sectionCard("Оплатили", paid.length ? `${paid.length} чел.` : "Нет"));
-  paid.forEach(s=> list.appendChild(payStudentCard(s)));
+  const sec3 = document.createElement("details");
+  sec3.className = "pay-section";
+  sec3.open = false;
+  sec3.innerHTML = `
+    <summary>
+      <div class="pay-section-title"><span class="dot ok"></span> Оплатили</div>
+      <div class="count">${paid.length} чел.</div>
+    </summary>
+    <div class="pay-list" id="secPaid"></div>
+  `;
+  list.appendChild(sec3);
+  const secPaid = sec3.querySelector("#secPaid");
+  if(paid.length) paid.forEach(s=> secPaid.appendChild(payStudentCard(s)));
+  else secPaid.innerHTML = `<div class="small">Нет</div>`;
 }
 
 /* Add */
@@ -790,7 +936,7 @@ function openPay(id){
   const remember = document.getElementById("rememberRate");
   remember.checked = false;
 
-  // дефолт — текущий статус месяца, если есть, иначе тариф ученика
+  // default: current month status if exists, else student's rate
   const currentV = monthStatusValue(s, selectedMonthIndex);
   if(currentV === 3000 || currentV === 1500 || currentV === -1 || currentV === 0){
     amountSel.value = String(currentV);
@@ -802,10 +948,9 @@ function openPay(id){
   const setPrompt = (mi)=>{
     const v = monthStatusValue(s, mi);
     const cls = statusClass(v);
+    const col = (cls==="ok") ? "var(--ok)" : (cls==="warn") ? "var(--warn)" : "var(--danger)";
     prompt.innerHTML = `Ученик: <b>${escapeHtml(s.name)}</b><br>
-      <span class="small">Статус за ${MONTHS[mi]}: <b style="color:${
-        cls==="ok" ? "var(--ok)" : cls==="warn" ? "var(--warn)" : "var(--danger)"
-      }">${statusLabel(v)}</b></span>`;
+      <span class="small">Статус за ${MONTHS[mi]}: <b style="color:${col}">${escapeHtml(statusLabel(v))}</b></span>`;
   };
 
   setPrompt(selectedMonthIndex);
@@ -813,7 +958,6 @@ function openPay(id){
   monthSel.onchange = ()=>{
     const mi = Number(monthSel.value);
     setPrompt(mi);
-    // при смене месяца — выставим селект под текущий статус этого месяца, иначе тариф
     const vv = monthStatusValue(s, mi);
     if(vv === 3000 || vv === 1500 || vv === -1 || vv === 0){
       amountSel.value = String(vv);
@@ -836,7 +980,6 @@ function applyPay(){
   if(!students[idx].payments) students[idx].payments = {};
   students[idx].payments[mi] = val;
 
-  // запоминаем тариф только если выбрали 1500 или 3000
   if(remember && (val === 1500 || val === 3000)){
     students[idx].rate = val;
   }
