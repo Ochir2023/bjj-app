@@ -152,16 +152,6 @@ let payId = null;
 let delId = null;
 let editId = null;
 
-/* === DOM === */
-const pinScreen = document.getElementById("pinScreen");
-const appScreen = document.getElementById("appScreen");
-const list = document.getElementById("list");
-
-const modalAdd = document.getElementById("modalAdd");
-const modalPay = document.getElementById("modalPay");
-const modalEdit = document.getElementById("modalEdit");
-const modalDelete = document.getElementById("modalDelete");
-
 /* === УТИЛИТЫ === */
 function uid(){
   return (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)));
@@ -282,10 +272,6 @@ function renderPaymentsTab(){
   students.forEach(s=>{ if(paidFor(s, selectedMonthIndex)) totalSum += PRICE; });
   groupList.forEach(s=>{ if(paidFor(s, selectedMonthIndex)) groupSum += PRICE; });
 
-  // кто не оплатил
-  const unpaidList = groupList.filter(s=>!paidFor(s, selectedMonthIndex));
-  const paidList = groupList.filter(s=>paidFor(s, selectedMonthIndex));
-
   const sumCard = document.createElement("div");
   sumCard.className = "card";
   sumCard.innerHTML = `
@@ -295,6 +281,9 @@ function renderPaymentsTab(){
   `;
   list.appendChild(sumCard);
 
+  const unpaidList = groupList.filter(s=>!paidFor(s, selectedMonthIndex));
+  const paidList = groupList.filter(s=>paidFor(s, selectedMonthIndex));
+
   const unpaidCard = document.createElement("div");
   unpaidCard.className = "card";
   unpaidCard.innerHTML = `<b>Не оплатили</b><div class="small">${MONTHS[selectedMonthIndex]}</div>` +
@@ -302,10 +291,6 @@ function renderPaymentsTab(){
   list.appendChild(unpaidCard);
 
   unpaidList.forEach(s=>list.appendChild(studentPayCard(s)));
-  if(unpaidList.length && paidList.length){
-    const hr = document.createElement("hr");
-    list.appendChild(hr);
-  }
 
   const paidCard = document.createElement("div");
   paidCard.className = "card";
@@ -386,20 +371,29 @@ function saveNewStudent(){
   render();
 }
 
-/* === ОПЛАТА (модалка с выбором месяца) === */
+/* === ОПЛАТА (модалка + выбор месяца + исправление) === */
 function fillPayMonthSelect(selected){
   payMonthSelect.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?'selected':''}>${m}</option>`).join("");
 }
+
 function openPay(id){
   payId = id;
   const idx = findIndexById(id);
   if(idx === -1) return;
 
+  // заполнить месяцы и выбрать текущий (экранный) месяц
   fillPayMonthSelect(selectedMonthIndex);
 
   const s = students[idx];
   const paid = paidFor(s, selectedMonthIndex);
   payPrompt.textContent = `Ученик: "${s.name}". Сейчас за ${MONTHS[selectedMonthIndex]}: ${paid ? "ОПЛАЧЕНО" : "НЕ ОПЛАЧЕНО"}. Выберите месяц и подтвердите.`;
+
+  // ✅ при смене месяца в модалке обновляем подсказку
+  payMonthSelect.onchange = () => {
+    const mi = Number(payMonthSelect.value);
+    const paid2 = paidFor(s, mi);
+    payPrompt.textContent = `Ученик: "${s.name}". Сейчас за ${MONTHS[mi]}: ${paid2 ? "ОПЛАЧЕНО" : "НЕ ОПЛАЧЕНО"}. Выберите месяц и подтвердите.`;
+  };
 
   modalPay.classList.remove("hidden");
 }
@@ -409,13 +403,20 @@ function confirmPay(v){
   if(idx === -1){ closePay(); return; }
 
   const mi = Number(payMonthSelect.value);
+
   if(!students[idx].payments) students[idx].payments = {};
   students[idx].payments[mi] = v;
+
+  // ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ:
+  // переключаем отображаемый месяц на выбранный в модалке,
+  // чтобы сразу было видно изменения
+  selectedMonthIndex = mi;
 
   save();
   closePay();
   render();
 }
+
 function closePay(){
   modalPay.classList.add("hidden");
   payId = null;
