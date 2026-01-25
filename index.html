@@ -52,6 +52,9 @@ header{
   width:90%;max-width:320px
 }
 </style>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+
 </head>
 <body>
 
@@ -204,6 +207,11 @@ function changeMonth(m){
 /* SAVE */
 function save(){
   localStorage.setItem('bjj_students',JSON.stringify(students));
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
 }
 </script>
 
