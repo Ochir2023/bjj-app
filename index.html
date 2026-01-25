@@ -567,7 +567,39 @@ details.pay-section summary::-webkit-details-marker{ display:none; }
       </div>
     </div>
   </div>
+<!-- MODAL: INFO (подробно) -->
+<div id="modalInfo" class="modal hidden">
+  <div class="modal-card">
+    <h3>Ученик</h3>
+    <div class="sub" id="infoSub"></div>
 
+    <div class="card" style="margin-top:10px;">
+      <div class="kv"><span class="label">ФИО:</span> <span class="value" id="infoName"></span></div>
+      <div class="kv" style="margin-top:6px;"><span class="label">Группа:</span> <span class="value" id="infoGroup"></span></div>
+
+      <div id="infoParentRow" class="kv" style="margin-top:6px;">
+        <span class="label">Родитель:</span> <span class="value" id="infoParent"></span>
+      </div>
+
+      <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value" id="infoPhone"></span></div>
+      <div class="kv" style="margin-top:6px;"><span class="label">Тариф:</span> <span class="value" id="infoRate"></span></div>
+
+      <div style="margin-top:10px;">
+        <span class="status" id="infoStatusBadge"></span>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn primary" id="infoPayBtn">Оплата</button>
+      <button class="btn edit" id="infoEditBtn">Редакт.</button>
+      <button class="btn danger" id="infoDelBtn">Удалить</button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:10px;">
+      <button class="btn" onclick="closeInfo()">Закрыть</button>
+    </div>
+  </div>
+</div>
 </div>
 
 <script>
