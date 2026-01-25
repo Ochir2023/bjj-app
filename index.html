@@ -1,64 +1,274 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>BJJ Ученики</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BJJ Учёт</title>
+
+<style>
+body { margin:0; font-family:Arial; background:#f2f2f2 }
+.hidden { display:none !important }
+
+/* экраны */
+.screen { padding:20px }
+
+/* header */
+header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+}
+.tabs {
+  display:flex;
+  gap:6px;
+}
+.tabs button {
+  padding:6px 8px;
+  font-size:13px;
+}
+.plus {
+  font-size:22px;
+  padding:4px 10px;
+}
+
+/* карточки */
+.card {
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
+  margin-top:10px;
+}
+
+/* модалки */
+.modal {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.modal-content {
+  background:#fff;
+  padding:16px;
+  border-radius:12px;
+  width:90%;
+  max-width:320px;
+}
+.modal-content input, button {
+  width:100%;
+  margin-top:8px;
+  padding:8px;
+}
+.actions {
+  display:flex;
+  gap:6px;
+}
+.delete { background:#b00020; color:#fff }
+.paid { color:green; font-weight:bold }
+.unpaid { color:red; font-weight:bold }
+</style>
 </head>
+
 <body>
 
-<!-- СТРАНИЦА PIN -->
+<!-- PIN -->
 <div id="pinScreen" class="screen">
   <h2>Введите PIN-код</h2>
-  <input type="password" id="pinInput" placeholder="PIN">
+  <input id="pinInput" placeholder="PIN">
   <button onclick="checkPin()">Войти</button>
 </div>
 
-<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+<!-- APP -->
 <div id="appScreen" class="screen hidden">
 
-  <!-- HEADER -->
-  <header>
-    <div class="tabs">
-      <button onclick="setGroup('Детская')">Детская</button>
-      <button onclick="setGroup('Взрослая')">Взрослая</button>
-      <button onclick="setGroup('Женская')">Женская</button>
-    </div>
-    <button class="plus" onclick="openAddModal()">＋</button>
-  </header>
+<header>
+  <div class="tabs">
+    <button onclick="setGroup('Детская')">Детская</button>
+    <button onclick="setGroup('Взрослая')">Взрослая</button>
+    <button onclick="setGroup('Женская')">Женская</button>
+    <button onclick="setGroup('Оплата')">Оплата</button>
+  </div>
+  <button class="plus" onclick="openAdd()">＋</button>
+</header>
 
-  <!-- СПИСОК -->
-  <div id="list"></div>
-</div>
+<div id="list"></div>
 
 <!-- МОДАЛКА ДОБАВЛЕНИЯ -->
-<div id="addModal" class="modal hidden">
+<div id="modalAdd" class="modal hidden">
   <div class="modal-content">
-    <h3 id="modalTitle">Добавить</h3>
+    <h3>Добавить</h3>
 
-    <input id="parentName" placeholder="ФИО родителя">
-    <input id="parentPhone" placeholder="Телефон">
+    <div id="parentFields">
+      <input id="parentName" placeholder="ФИО родителя">
+    </div>
 
+    <input id="phone" placeholder="Телефон">
     <input id="studentName" placeholder="ФИО ученика">
 
     <button onclick="saveStudent()">Сохранить</button>
-    <button onclick="closeAddModal()">Отмена</button>
+    <button onclick="closeAdd()">Отмена</button>
   </div>
-</div>
-<div id="appScreen" class="screen hidden">
-<!-- МОДАЛКА УДАЛЕНИЯ -->
-<div id="confirmDelete" class="modal hidden">
-  <div class="modal-content">
-    <p>Удалить ученика?</p>
-    <button onclick="confirmDeleteYes()">Удалить</button>
-    <button onclick="closeDelete()">Нет</button>
-  </div>
-</div>
-  
 </div>
 
-<script src="app.js"></script>
+<!-- МОДАЛКА ОПЛАТЫ -->
+<div id="modalPay" class="modal hidden">
+  <div class="modal-content">
+    <p>Отметить оплату?</p>
+    <button onclick="confirmPay(true)">Оплатил</button>
+    <button onclick="confirmPay(false)">Не оплатил</button>
+    <button onclick="closePay()">Отмена</button>
+  </div>
+</div>
+
+<!-- МОДАЛКА УДАЛЕНИЯ -->
+<div id="modalDelete" class="modal hidden">
+  <div class="modal-content">
+    <p>Удалить ученика?</p>
+    <button class="delete" onclick="confirmDelete()">Удалить</button>
+    <button onclick="closeDelete()">Отмена</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* === НАСТРОЙКИ === */
+const PIN = "1234";
+const PRICE = 3000;
+
+/* === СОСТОЯНИЕ === */
+let group = "Детская";
+let students = JSON.parse(localStorage.getItem("bjj_students")) || [];
+let payIndex = null;
+let delIndex = null;
+
+/* === ЭЛЕМЕНТЫ === */
+const pinScreen = document.getElementById("pinScreen");
+const appScreen = document.getElementById("appScreen");
+const list = document.getElementById("list");
+
+const modalAdd = document.getElementById("modalAdd");
+const modalPay = document.getElementById("modalPay");
+const modalDelete = document.getElementById("modalDelete");
+
+/* === ВХОД === */
+function checkPin() {
+  if (pinInput.value === PIN) {
+    pinScreen.classList.add("hidden");
+    appScreen.classList.remove("hidden");
+    closeAllModals();
+    render();
+  } else {
+    alert("Неверный PIN");
+  }
+}
+
+/* === ГРУППЫ === */
+function setGroup(g) {
+  group = g;
+  render();
+}
+
+/* === РЕНДЕР === */
+function render() {
+  list.innerHTML = "";
+
+  if (group === "Оплата") {
+    renderPayments();
+    return;
+  }
+
+  students.filter(s => s.group === group).forEach((s,i)=>{
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <b>${s.name}</b><br>
+      ${s.parent ? "Родитель: "+s.parent+"<br>" : ""}
+      Тел: ${s.phone}<br>
+      <span class="${s.paid?'paid':'unpaid'}">
+        ${s.paid?'Оплачено':'Не оплачено'}
+      </span>
+      <div class="actions">
+        <button onclick="openPay(${i})">Оплата</button>
+        <button class="delete" onclick="openDelete(${i})">Удалить</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+/* === ДОБАВЛЕНИЕ === */
+function openAdd() {
+  parentFields.style.display = (group === "Детская") ? "block" : "none";
+  modalAdd.classList.remove("hidden");
+}
+function closeAdd(){ modalAdd.classList.add("hidden"); }
+
+function saveStudent() {
+  students.push({
+    group,
+    parent: group==="Детская"?parentName.value:"",
+    phone: phone.value,
+    name: studentName.value,
+    paid:false
+  });
+  save();
+  closeAdd();
+  render();
+}
+
+/* === ОПЛАТА === */
+function openPay(i){ payIndex=i; modalPay.classList.remove("hidden"); }
+function confirmPay(v){
+  students[payIndex].paid=v;
+  save();
+  closePay();
+  render();
+}
+function closePay(){ modalPay.classList.add("hidden"); }
+
+/* === УДАЛЕНИЕ === */
+function openDelete(i){ delIndex=i; modalDelete.classList.remove("hidden"); }
+function confirmDelete(){
+  students.splice(delIndex,1);
+  save();
+  closeDelete();
+  render();
+}
+function closeDelete(){ modalDelete.classList.add("hidden"); }
+
+/* === ОПЛАТА ВКЛАДКА === */
+function renderPayments(){
+  let html = "";
+  ["Детская","Взрослая","Женская"].forEach(g=>{
+    let sum=0;
+    html += `<div class="card"><b>${g}</b><br>`;
+    students.filter(s=>s.group===g).forEach(s=>{
+      if(s.paid) sum+=PRICE;
+      html+=`${s.name}: ${s.paid?'✔':'✖'}<br>`;
+    });
+    html+=`Итого: ${sum} ₽</div>`;
+  });
+  list.innerHTML = html;
+}
+
+/* === ХРАНЕНИЕ === */
+function save(){
+  localStorage.setItem("bjj_students", JSON.stringify(students));
+}
+
+/* === ЗАКРЫТЬ ВСЁ === */
+function closeAllModals(){
+  modalAdd.classList.add("hidden");
+  modalPay.classList.add("hidden");
+  modalDelete.classList.add("hidden");
+}
+
+/* === СТАРТ === */
+closeAllModals();
+</script>
+
 </body>
 </html>
