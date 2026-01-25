@@ -8,57 +8,78 @@
 <style>
 body{margin:0;font-family:Arial;background:#f2f2f2}
 .hidden{display:none}
-.card{background:#fff;margin:10px;padding:12px;border-radius:10px}
-input,select,button{width:100%;padding:8px;margin-top:6px}
 
+/* CARD */
+.card{
+  background:#fff;
+  margin:10px;
+  padding:12px;
+  border-radius:10px;
+}
+
+/* INPUTS */
+input,button,select{
+  width:100%;
+  padding:8px;
+  margin-top:6px;
+  font-size:14px;
+}
+
+/* PIN */
+#pinScreen{
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
   align-items:center;
   padding:10px;
   background:#111;
-  color:#fff
+  color:#fff;
 }
-.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs{display:flex;gap:6px}
 .tab{
   padding:6px 10px;
   background:#333;
   border-radius:6px;
   font-size:14px;
-  cursor:pointer
+  cursor:pointer;
 }
 .tab.active{background:#555}
 #addBtn{
+  font-size:22px;
   background:#fff;
   border:none;
   border-radius:50%;
-  font-size:22px;
   padding:4px 10px;
 }
 
-.actions{display:flex;gap:6px;margin-top:8px}
-.delete{background:#b00020;color:#fff;border:none}
-.pay{background:#111;color:#fff;border:none}
-
+/* MODAL */
 .modal{
-  position:fixed;inset:0;
+  position:fixed;
+  inset:0;
   background:rgba(0,0,0,.5);
-  display:flex;align-items:center;justify-content:center
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 .modal-content{
   background:#fff;
   padding:16px;
   border-radius:10px;
-  width:90%;max-width:320px
+  width:90%;
+  max-width:320px;
 }
 </style>
-  <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#111111">
-
 </head>
 <body>
 
-<!-- PIN -->
+<!-- PIN SCREEN -->
 <div id="pinScreen">
   <div class="card">
     <h3>Введите PIN</h3>
@@ -72,146 +93,91 @@ header{
 
 <header>
   <div class="tabs">
-    <div class="tab active" onclick="setTab('list')">Ученики</div>
-    <div class="tab" onclick="setTab('payment')">Оплата</div>
+    <div class="tab active" onclick="setGroup('Детская')">Детская</div>
+    <div class="tab" onclick="setGroup('Взрослая')">Взрослая</div>
+    <div class="tab" onclick="setGroup('Женская')">Женская</div>
   </div>
   <button id="addBtn" onclick="openForm()">＋</button>
 </header>
 
-<div id="content"></div>
+<div id="list"></div>
 </div>
 
-<!-- ADD -->
+<!-- FORM MODAL (ВАЖНО: hidden) -->
 <div id="formModal" class="modal hidden">
   <div class="modal-content">
     <h3>Добавить</h3>
-    <select id="group">
+
+    <select id="groupSelect">
       <option>Детская</option>
       <option>Взрослая</option>
       <option>Женская</option>
     </select>
+
     <input id="parent" placeholder="ФИО родителя">
     <input id="phone" placeholder="Телефон">
     <input id="student" placeholder="ФИО ученика">
-    <button onclick="add()">Сохранить</button>
+
+    <button onclick="addStudent()">Сохранить</button>
     <button onclick="closeForm()">Отмена</button>
   </div>
 </div>
 
 <script>
 /* DATA */
-const PRICE = 3000;
-const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-let currentMonth = new Date().getMonth();
-let tab = 'list';
-let payGroup = 'Детская';
-
-let students = JSON.parse(localStorage.getItem('bjj_students')||'[]');
+let currentGroup = 'Детская';
+let students = JSON.parse(localStorage.getItem('bjj_students') || '[]');
 
 /* PIN */
-if(!localStorage.getItem('bjj_pin')) localStorage.setItem('bjj_pin','1234');
+if(!localStorage.getItem('bjj_pin')){
+  localStorage.setItem('bjj_pin','1234');
+}
 function checkPin(){
-  if(pinInput.value===localStorage.getItem('bjj_pin')){
+  if(pinInput.value === localStorage.getItem('bjj_pin')){
     pinScreen.classList.add('hidden');
     app.classList.remove('hidden');
     render();
   }
 }
 
-/* TABS */
-function setTab(t){ tab=t; render(); }
-
-/* RENDER */
-function render(){
-  const c = document.getElementById('content');
-  c.innerHTML='';
-
-  if(tab==='list'){
-    c.innerHTML=`
-      <div class="card">
-        ${students.map(s=>`
-          <div><b>${s.student}</b> (${s.group})</div>
-        `).join('')}
-      </div>`;
-  }
-
-  if(tab==='payment'){
-    c.innerHTML=`
-      <div class="card">
-        <select onchange="changeMonth(this.value)">
-          ${months.map((m,i)=>`<option ${i==currentMonth?'selected':''}>${m}</option>`).join('')}
-        </select>
-
-        <div class="tabs">
-          ${['Детская','Взрослая','Женская'].map(g=>`
-            <div class="tab ${g===payGroup?'active':''}" onclick="payGroup='${g}';render()">${g}</div>
-          `).join('')}
-        </div>
-
-        ${students.filter(s=>s.group===payGroup).map((s,i)=>{
-          const paid = s.payments?.[currentMonth];
-          return `
-            <div class="card">
-              <b>${s.student}</b><br>
-              ${months[currentMonth]}: 
-              <span style="color:${paid?'green':'red'}">
-                ${paid?'Оплачено':'Не оплачено'}
-              </span>
-              <div class="actions">
-                <button class="pay" onclick="togglePay(${i})">
-                  ${paid?'Отменить':'Оплатил'}
-                </button>
-                <button class="delete" onclick="remove(${i})">Удалить</button>
-              </div>
-            </div>`;
-        }).join('')}
-      </div>`;
-  }
-}
-
-/* ADD */
-function openForm(){formModal.classList.remove('hidden')}
-function closeForm(){formModal.classList.add('hidden')}
-function add(){
-  students.push({
-    group:group.value,
-    parent:group.value==='Детская'?parent.value:'',
-    phone:phone.value,
-    student:student.value,
-    payments:{}
+/* GROUP */
+function setGroup(g){
+  currentGroup = g;
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.toggle('active', t.textContent === g);
   });
-  save(); closeForm(); render();
-}
-
-/* PAY */
-function togglePay(i){
-  if(!students[i].payments) students[i].payments={}
-  students[i].payments[currentMonth]=!students[i].payments[currentMonth];
-  save(); render();
-}
-
-/* REMOVE */
-function remove(i){
-  if(confirm('Удалить ученика?')){
-    students.splice(i,1);
-    save(); render();
-  }
-}
-
-/* MONTH */
-function changeMonth(m){
-  currentMonth = months.indexOf(m);
   render();
 }
 
-/* SAVE */
-function save(){
-  localStorage.setItem('bjj_students',JSON.stringify(students));
+/* RENDER */
+function render(){
+  list.innerHTML = '';
+  students.filter(s=>s.group===currentGroup).forEach(s=>{
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `<b>${s.student}</b><br>Телефон: ${s.phone}`;
+    list.appendChild(div);
+  });
 }
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
+
+/* FORM */
+function openForm(){
+  formModal.classList.remove('hidden');
+}
+function closeForm(){
+  formModal.classList.add('hidden');
+}
+function addStudent(){
+  students.push({
+    group: groupSelect.value,
+    parent: groupSelect.value==='Детская'?parent.value:'',
+    phone: phone.value,
+    student: student.value
+  });
+  localStorage.setItem('bjj_students', JSON.stringify(students));
+  closeForm();
+  render();
+  parent.value = phone.value = student.value = '';
 }
 </script>
 
