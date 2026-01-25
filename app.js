@@ -1,3 +1,6 @@
+document.getElementById("confirmDelete").classList.add("hidden");
+let deleteIndex = null;
+
 const PIN = "1234";
 let currentGroup = "Детская";
 let students = JSON.parse(localStorage.getItem("students") || "[]");
@@ -8,6 +11,8 @@ function checkPin() {
   if (pin === PIN) {
     document.getElementById("pinScreen").classList.add("hidden");
     document.getElementById("appScreen").classList.remove("hidden");
+
+    closeDelete(); // ← ВАЖНО
     render();
   } else {
     alert("Неверный PIN");
