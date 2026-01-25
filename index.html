@@ -9,13 +9,13 @@
 :root{
   --bg:#0a0b0e;
   --panel:#11131a;
-  --card:#151826;
   --text:#e9edf6;
   --muted:#9aa3b2;
   --line:rgba(255,255,255,.08);
   --gold:#d3b45a;
   --ok:#3ddc97;
   --danger:#ff4d6d;
+  --warn:#f0c24b; /* желтый */
   --shadow: 0 10px 30px rgba(0,0,0,.45);
   --radius:16px;
   --radius2:22px;
@@ -153,6 +153,7 @@ body{
 }
 .status.ok{ border-color: rgba(61,220,151,.30); color: rgba(61,220,151,.95); }
 .status.bad{ border-color: rgba(255,77,109,.30); color: rgba(255,77,109,.95); }
+.status.warn{ border-color: rgba(240,194,75,.35); color: rgba(240,194,75,.98); }
 
 .actions{ display:flex; gap:8px; margin-top: 10px; }
 .btn{
@@ -230,7 +231,7 @@ select{
   padding: 18px; z-index: 50;
 }
 .modal-card{
-  width:100%; max-width: 500px;
+  width:100%; max-width: 520px;
   border-radius: 22px;
   border:1px solid var(--line);
   background:
@@ -245,9 +246,7 @@ select{
 .modal-actions .btn{ flex:1; }
 
 .split{ display:grid; grid-template-columns: 1fr; gap:10px; margin-top: 10px; }
-@media (min-width: 620px){
-  .split{ grid-template-columns: 1fr 1fr; }
-}
+@media (min-width: 620px){ .split{ grid-template-columns: 1fr 1fr; } }
 hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
 </style>
 </head>
@@ -261,7 +260,7 @@ hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
       <div class="logo"></div>
       <div class="brand-title">
         <b>BJJ • УЧЁТ</b>
-        <span>Журнал • оплата по месяцам</span>
+        <span>Тарифы 3000/1500 + “не ходил”</span>
       </div>
     </div>
 
@@ -310,9 +309,8 @@ hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
       <div class="hero-inner">
         <div>
           <h1 id="heroTitle">Детская группа</h1>
-          <div class="meta" id="heroMeta">Тарифы: 3000 ₽ / 1500 ₽ • Учёт по месяцам</div>
+          <div class="meta" id="heroMeta">Тарифы: 3000 ₽ / 1500 ₽ / не ходил</div>
         </div>
-        <div class="hero .pill"></div>
         <div class="pill" id="heroPill">Месяц: <span id="pillMonth"></span></div>
       </div>
     </div>
@@ -360,7 +358,7 @@ hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
   <!-- MODAL: PAY -->
   <div id="modalPay" class="modal hidden">
     <div class="modal-card">
-      <h3>Оплата</h3>
+      <h3>Оплата / Статус</h3>
       <div class="sub" id="payPrompt"></div>
 
       <div class="split">
@@ -369,10 +367,12 @@ hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
           <select id="payMonthSelect"></select>
         </div>
         <div>
-          <div class="small">Сумма</div>
+          <div class="small">Статус за месяц</div>
           <select id="payAmountSelect">
-            <option value="3000">3000 ₽</option>
-            <option value="1500">1500 ₽</option>
+            <option value="3000">Оплатил 3000 ₽</option>
+            <option value="1500">Оплатил 1500 ₽</option>
+            <option value="-1">Не ходил</option>
+            <option value="0">Не оплатил</option>
           </select>
         </div>
       </div>
@@ -380,16 +380,14 @@ hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
       <div style="margin-top:10px;">
         <label style="display:flex; gap:10px; align-items:center; font-size:12px; color:var(--muted);">
           <input type="checkbox" id="rememberRate" />
-          Запомнить выбранную сумму как тариф ученика
+          Запомнить выбранную сумму как тариф ученика (только 1500/3000)
         </label>
       </div>
 
       <div class="modal-actions">
-        <button class="btn primary" onclick="confirmPay()">Оплатил</button>
-        <button class="btn danger" onclick="markUnpaid()">Не оплатил</button>
+        <button class="btn primary" onclick="applyPay()">Применить</button>
+        <button class="btn" onclick="closePay()">Отмена</button>
       </div>
-
-      <button class="btn" style="margin-top:10px;" onclick="closePay()">Отмена</button>
     </div>
   </div>
 
@@ -456,7 +454,6 @@ hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
 
 <script>
 const PIN = "1234";
-const PRICE_DEFAULTS = [3000, 1500];
 const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 
 let mainTab = "Детская";
@@ -476,16 +473,37 @@ function escapeHtml(str){
 }
 function save(){ localStorage.setItem("bjj_students", JSON.stringify(students)); }
 function findIndexById(id){ return students.findIndex(s=>s.id===id); }
-function paidAmountFor(s, mi){
-  const v = s.payments ? s.payments[mi] : 0;
-  return (typeof v === "number") ? v : (v === true ? 3000 : 0);
+
+/*
+payments[month] = number:
+  3000 / 1500 = оплата
+  0 = не оплатил
+  -1 = не ходил
+*/
+function monthStatusValue(s, mi){
+  const raw = s.payments ? s.payments[mi] : 0;
+  if(typeof raw === "number") return raw;
+  if(raw === true) return 3000; // старые данные
+  if(raw === false) return 0;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+function statusLabel(v){
+  if(v === -1) return "Не ходил";
+  if(v === 0) return "Не оплатил";
+  if(v > 0) return `Оплачено (${v} ₽)`;
+  return "Не оплатил";
+}
+function statusClass(v){
+  if(v === -1) return "warn";
+  if(v > 0) return "ok";
+  return "bad";
+}
+function incomeFromStatus(v){
+  return (v > 0) ? v : 0; // не ходил и не оплатил = 0
 }
 
-/* migration:
-   - ensure id
-   - ensure rate (default 3000)
-   - payments: convert boolean => number (true=>3000, false=>0)
-*/
+/* migration: ensure id, rate, payments numeric */
 (function migrate(){
   const nowMonth = new Date().getMonth();
   students = students.map(s=>{
@@ -497,11 +515,9 @@ function paidAmountFor(s, mi){
     const rate = Number(s.rate || 3000);
 
     let payments = (s.payments && typeof s.payments === "object") ? s.payments : {};
-    // old single paid boolean
     if(typeof s.paid === "boolean"){
       payments[nowMonth] = s.paid ? 3000 : 0;
     }
-    // convert all booleans in payments
     Object.keys(payments).forEach(k=>{
       const val = payments[k];
       if(val === true) payments[k] = 3000;
@@ -520,7 +536,6 @@ function setActiveTabBtn(){
   const id = map[mainTab];
   if(id) document.getElementById(id).classList.add("active");
 }
-
 function updateHeader(){
   document.getElementById("pillMonth").textContent = MONTHS[selectedMonthIndex];
   document.getElementById("topHint").textContent = (mainTab === "Оплата")
@@ -545,6 +560,16 @@ function setMainTab(tab){
   render();
 }
 
+function emptyCard(text){
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="title"><b>Пусто</b><span class="badge">INFO</span></div>
+    <div class="small">${escapeHtml(text)}</div>
+  `;
+  return card;
+}
+
 function render(){
   updateHeader();
   const list = document.getElementById("list");
@@ -562,9 +587,7 @@ function render(){
   }
 
   groupList.forEach(s=>{
-    const amount = paidAmountFor(s, selectedMonthIndex);
-    const paid = amount > 0;
-
+    const v = monthStatusValue(s, selectedMonthIndex);
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -576,12 +599,12 @@ function render(){
       ${s.parent ? `<div class="kv"><span class="label">Родитель:</span> <span class="value">${escapeHtml(s.parent)}</span></div>` : ``}
       <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value">${escapeHtml(s.phone)}</span></div>
 
-      <div class="status ${paid ? "ok":"bad"}">
-        ${paid ? `● Оплачено (${amount} ₽)` : "● Не оплачено"} — ${MONTHS[selectedMonthIndex]}
+      <div class="status ${statusClass(v)}">
+        ● ${statusLabel(v)} — ${MONTHS[selectedMonthIndex]}
       </div>
 
       <div class="actions">
-        <button class="btn primary" onclick="openPay('${s.id}')">Оплата</button>
+        <button class="btn primary" onclick="openPay('${s.id}')">Оплата/Статус</button>
         <button class="btn edit" onclick="openEdit('${s.id}')">Редактировать</button>
         <button class="btn danger" onclick="openDelete('${s.id}')">Удалить</button>
       </div>
@@ -590,17 +613,42 @@ function render(){
   });
 }
 
-function emptyCard(text){
+/* Payments tab */
+function sectionCard(title, subtitle){
   const card = document.createElement("div");
   card.className = "card";
   card.innerHTML = `
-    <div class="title"><b>Пусто</b><span class="badge">INFO</span></div>
-    <div class="small">${escapeHtml(text)}</div>
+    <div class="title"><b>${escapeHtml(title)}</b><span class="badge">${escapeHtml(subtitle)}</span></div>
+    <div class="small">${MONTHS[selectedMonthIndex]}</div>
   `;
   return card;
 }
 
-/* Payments tab with totals by amounts */
+function payStudentCard(s){
+  const v = monthStatusValue(s, selectedMonthIndex);
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="title">
+      <b>${escapeHtml(s.name)}</b>
+      <span class="badge">${escapeHtml(s.group)} • тариф ${s.rate} ₽</span>
+    </div>
+    ${s.parent ? `<div class="kv"><span class="label">Родитель:</span> <span class="value">${escapeHtml(s.parent)}</span></div>` : ``}
+    <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value">${escapeHtml(s.phone)}</span></div>
+
+    <div class="status ${statusClass(v)}">
+      ● ${statusLabel(v)} — ${MONTHS[selectedMonthIndex]}
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" onclick="openPay('${s.id}')">Изменить</button>
+      <button class="btn edit" onclick="openEdit('${s.id}')">Редактировать</button>
+      <button class="btn danger" onclick="openDelete('${s.id}')">Удалить</button>
+    </div>
+  `;
+  return card;
+}
+
 function renderPaymentsTab(){
   const list = document.getElementById("list");
 
@@ -608,7 +656,7 @@ function renderPaymentsTab(){
   control.className = "card";
   control.innerHTML = `
     <div class="title"><b>Оплата</b><span class="badge">${MONTHS[selectedMonthIndex]}</span></div>
-    <div class="small">Тарифы: 3000 ₽ / 1500 ₽. Итоги считаются суммой оплат за выбранный месяц.</div>
+    <div class="small">Статусы: 3000 ₽ / 1500 ₽ / <b style="color:var(--warn)">не ходил</b> / не оплатил</div>
 
     <div class="split">
       <div>
@@ -640,16 +688,17 @@ function renderPaymentsTab(){
   let groupSum = 0;
   let totalSum = 0;
 
-  students.forEach(s=> totalSum += paidAmountFor(s, selectedMonthIndex));
-  groupList.forEach(s=> groupSum += paidAmountFor(s, selectedMonthIndex));
+  students.forEach(s=> totalSum += incomeFromStatus(monthStatusValue(s, selectedMonthIndex)));
+  groupList.forEach(s=> groupSum += incomeFromStatus(monthStatusValue(s, selectedMonthIndex)));
 
   const summary = document.createElement("div");
   summary.className = "card";
   summary.innerHTML = `
     <div class="title"><b>Итоги</b><span class="badge">${escapeHtml(payGroupTab)}</span></div>
-    <div class="row" style="margin-top:10px;">
-      <div class="status ok" style="justify-content:center;">Группа: <b style="margin-left:6px;">${groupSum} ₽</b></div>
-      <div class="status ok" style="justify-content:center;">Всего: <b style="margin-left:6px;">${totalSum} ₽</b></div>
+    <div class="small">Доход учитывает только оплаты (1500/3000). “Не ходил” = 0 ₽.</div>
+    <div style="margin-top:10px;" class="kv">
+      <span class="label">Группа:</span><span class="value"><b>${groupSum} ₽</b></span>
+      <span class="label">Всего:</span><span class="value"><b>${totalSum} ₽</b></span>
     </div>
   `;
   list.appendChild(summary);
@@ -659,52 +708,18 @@ function renderPaymentsTab(){
     return;
   }
 
-  const unpaid = groupList.filter(s=>paidAmountFor(s, selectedMonthIndex) === 0);
-  const paid = groupList.filter(s=>paidAmountFor(s, selectedMonthIndex) > 0);
+  const notPaid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === 0);
+  const notCame = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === -1);
+  const paid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) > 0);
 
-  list.appendChild(sectionCard("Не оплатили", unpaid.length ? `${unpaid.length} чел.` : "Все оплатили ✅"));
-  unpaid.forEach(s=> list.appendChild(payStudentCard(s)));
+  list.appendChild(sectionCard("Не оплатили", notPaid.length ? `${notPaid.length} чел.` : "Нет"));
+  notPaid.forEach(s=> list.appendChild(payStudentCard(s)));
 
-  list.appendChild(sectionCard("Оплатили", paid.length ? `${paid.length} чел.` : "Пока нет оплат"));
+  list.appendChild(sectionCard("Не ходили", notCame.length ? `${notCame.length} чел.` : "Нет"));
+  notCame.forEach(s=> list.appendChild(payStudentCard(s)));
+
+  list.appendChild(sectionCard("Оплатили", paid.length ? `${paid.length} чел.` : "Нет"));
   paid.forEach(s=> list.appendChild(payStudentCard(s)));
-}
-
-function sectionCard(title, subtitle){
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="title"><b>${escapeHtml(title)}</b><span class="badge">${escapeHtml(subtitle)}</span></div>
-    <div class="small">${MONTHS[selectedMonthIndex]}</div>
-  `;
-  return card;
-}
-
-function payStudentCard(s){
-  const amount = paidAmountFor(s, selectedMonthIndex);
-  const paid = amount > 0;
-
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="title">
-      <b>${escapeHtml(s.name)}</b>
-      <span class="badge">${escapeHtml(s.group)} • тариф ${s.rate} ₽</span>
-    </div>
-
-    ${s.parent ? `<div class="kv"><span class="label">Родитель:</span> <span class="value">${escapeHtml(s.parent)}</span></div>` : ``}
-    <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value">${escapeHtml(s.phone)}</span></div>
-
-    <div class="status ${paid ? "ok":"bad"}">
-      ${paid ? `● Оплачено (${amount} ₽)` : "● Не оплачено"} — ${MONTHS[selectedMonthIndex]}
-    </div>
-
-    <div class="actions">
-      <button class="btn primary" onclick="openPay('${s.id}')">${paid ? "Изменить" : "Оплата"}</button>
-      <button class="btn edit" onclick="openEdit('${s.id}')">Редактировать</button>
-      <button class="btn danger" onclick="openDelete('${s.id}')">Удалить</button>
-    </div>
-  `;
-  return card;
 }
 
 /* Add */
@@ -756,7 +771,7 @@ function saveNewStudent(){
   render();
 }
 
-/* Pay modal */
+/* Pay modal (apply status) */
 function fillPayMonthSelect(selected){
   const sel = document.getElementById("payMonthSelect");
   sel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
@@ -771,54 +786,60 @@ function openPay(id){
   fillPayMonthSelect(selectedMonthIndex);
 
   const monthSel = document.getElementById("payMonthSelect");
-  const amtSel = document.getElementById("payAmountSelect");
+  const amountSel = document.getElementById("payAmountSelect");
   const remember = document.getElementById("rememberRate");
   remember.checked = false;
 
-  // default amount: student's rate
-  amtSel.value = String(s.rate || 3000);
+  // дефолт — текущий статус месяца, если есть, иначе тариф ученика
+  const currentV = monthStatusValue(s, selectedMonthIndex);
+  if(currentV === 3000 || currentV === 1500 || currentV === -1 || currentV === 0){
+    amountSel.value = String(currentV);
+  } else {
+    amountSel.value = String(s.rate || 3000);
+  }
 
   const prompt = document.getElementById("payPrompt");
   const setPrompt = (mi)=>{
-    const amount = paidAmountFor(s, mi);
-    const paid = amount > 0;
+    const v = monthStatusValue(s, mi);
+    const cls = statusClass(v);
     prompt.innerHTML = `Ученик: <b>${escapeHtml(s.name)}</b><br>
-      <span class="small">Статус за ${MONTHS[mi]}: <b style="color:${paid? "var(--ok)":"var(--danger)"}">${paid ? "ОПЛАЧЕНО" : "НЕ ОПЛАЧЕНО"}</b>
-      ${paid ? ` (${amount} ₽)` : ""}</span>`;
+      <span class="small">Статус за ${MONTHS[mi]}: <b style="color:${
+        cls==="ok" ? "var(--ok)" : cls==="warn" ? "var(--warn)" : "var(--danger)"
+      }">${statusLabel(v)}</b></span>`;
   };
 
   setPrompt(selectedMonthIndex);
-  monthSel.onchange = ()=> setPrompt(Number(monthSel.value));
+
+  monthSel.onchange = ()=>{
+    const mi = Number(monthSel.value);
+    setPrompt(mi);
+    // при смене месяца — выставим селект под текущий статус этого месяца, иначе тариф
+    const vv = monthStatusValue(s, mi);
+    if(vv === 3000 || vv === 1500 || vv === -1 || vv === 0){
+      amountSel.value = String(vv);
+    } else {
+      amountSel.value = String(s.rate || 3000);
+    }
+  };
 
   document.getElementById("modalPay").classList.remove("hidden");
 }
 
-function confirmPay(){
+function applyPay(){
   const idx = findIndexById(payId);
   if(idx === -1){ closePay(); return; }
 
   const mi = Number(document.getElementById("payMonthSelect").value);
-  const amount = Number(document.getElementById("payAmountSelect").value);
+  const val = Number(document.getElementById("payAmountSelect").value);
   const remember = document.getElementById("rememberRate").checked;
 
   if(!students[idx].payments) students[idx].payments = {};
-  students[idx].payments[mi] = amount;
+  students[idx].payments[mi] = val;
 
-  if(remember) students[idx].rate = amount;
-
-  selectedMonthIndex = mi; // сразу показываем выбранный месяц
-  save();
-  closePay();
-  render();
-}
-
-function markUnpaid(){
-  const idx = findIndexById(payId);
-  if(idx === -1){ closePay(); return; }
-
-  const mi = Number(document.getElementById("payMonthSelect").value);
-  if(!students[idx].payments) students[idx].payments = {};
-  students[idx].payments[mi] = 0;
+  // запоминаем тариф только если выбрали 1500 или 3000
+  if(remember && (val === 1500 || val === 3000)){
+    students[idx].rate = val;
+  }
 
   selectedMonthIndex = mi;
   save();
