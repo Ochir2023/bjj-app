@@ -1,4 +1,4 @@
-const CACHE_NAME = "bjj-pwa-v3";
+const CACHE_NAME = "bjj-pwa-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -36,13 +36,11 @@ self.addEventListener("fetch", (e) => {
 
     try {
       const fresh = await fetch(req);
-      // cache same-origin GET requests
       if (req.method === "GET" && new URL(req.url).origin === location.origin) {
         cache.put(req, fresh.clone());
       }
       return fresh;
     } catch (err) {
-      // fallback to index for navigation
       if (req.mode === "navigate") {
         const fallback = await cache.match("./index.html");
         if (fallback) return fallback;
