@@ -382,6 +382,8 @@ function render(){
     tile.innerHTML=`
       <div>
         <div class="tile-top">
+        <div class="tile-name">${esc(s.name)}</div>
+
           <div class="dots" title="${esc(statusLabel(v))}">
   ${
     cls==="bad"
