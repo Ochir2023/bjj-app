@@ -1,4 +1,4 @@
-const CACHE_NAME = "bjj-pwa-v6";
+const CACHE_NAME = "bjj-pwa-v7";
 const ASSETS = [
   "./",
   "./index.html",
