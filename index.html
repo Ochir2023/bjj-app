@@ -93,7 +93,11 @@ button{cursor:pointer}
 .dots{display:flex;gap:6px;align-items:center}
 .dot{width:10px;height:10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);box-shadow:0 0 0 3px rgba(255,255,255,.03)}
 .dot.red{background:var(--danger)} .dot.yellow{background:var(--warn)} .dot.green{background:var(--ok)}
-.dot.active{transform:scale(1.25)}
+.dot.active{
+  transform: scale(1.35);
+  box-shadow: 0 0 10px currentColor;
+}
+
 
 .tile-icons{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .ico{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:14px}
