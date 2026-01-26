@@ -416,6 +416,108 @@ function render(){
   updateHeader();
   const list=document.getElementById("list");
   list.innerHTML="";
+  if(tab === "Оплата"){
+  renderPaymentScreen();
+  return;
+}
+  function renderPaymentScreen(){
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  // Панель выбора месяца и группы
+  const panel = document.createElement("div");
+  panel.className = "card";
+  panel.innerHTML = `
+    <div class="small" style="margin-bottom:8px;">Оплата за месяц</div>
+    <div class="row">
+      <div style="flex:1">
+        <div class="small">Месяц</div>
+        <select id="payMonth"></select>
+      </div>
+      <div style="flex:1">
+        <div class="small">Группа</div>
+        <select id="payGroup">
+          <option>Детская</option>
+          <option>Взрослая</option>
+          <option>Женская</option>
+        </select>
+      </div>
+    </div>
+    <div class="small" id="paySummary" style="margin-top:10px;"></div>
+  `;
+  list.appendChild(panel);
+
+  const payMonth = panel.querySelector("#payMonth");
+  payMonth.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===monthIndex?"selected":""}>${m}</option>`).join("");
+  const payGroup = panel.querySelector("#payGroup");
+  payGroup.value = "Детская";
+
+  function draw(){
+    const mi = Number(payMonth.value);
+    const g = payGroup.value;
+    const groupList = students.filter(s=>s.group===g);
+
+    let sum = 0;
+    let notPaid = 0, notCame = 0, paid = 0;
+
+    groupList.forEach(s=>{
+      const v = monthStatusValue(s, mi);
+      if(v > 0){ sum += v; paid++; }
+      else if(v === -1){ notCame++; }
+      else { notPaid++; }
+    });
+
+    panel.querySelector("#paySummary").innerHTML =
+      `Доход: <b>${sum} ₽</b> • ✅ ${paid} • 🟡 ${notCame} • ❌ ${notPaid}`;
+
+    // список учеников
+    const box = document.getElementById("payListBox");
+    if(box) box.remove();
+
+    const wrap = document.createElement("div");
+    wrap.id = "payListBox";
+    wrap.style.marginTop = "10px";
+
+    groupList.forEach(s=>{
+      const v = monthStatusValue(s, mi);
+      const cls = statusClass(v);
+
+      const row = document.createElement("div");
+      row.className = "card";
+      row.style.padding = "10px";
+      row.style.marginBottom = "10px";
+      row.style.cursor = "pointer";
+      row.onclick = ()=>{ monthIndex = mi; openInfo(s.id); };
+
+      const statusText = statusLabel(v);
+      const dot = cls==="ok" ? "🟢" : cls==="warn" ? "🟡" : "🔴";
+
+      row.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+          <div style="min-width:0;">
+            <div style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.name)}</div>
+            <div class="small">тел: ${esc(s.phone)} ${s.parent?(" • родитель: "+esc(s.parent)):""}</div>
+          </div>
+          <div style="white-space:nowrap;">${dot} <span class="small">${esc(statusText)}</span></div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary" onclick="event.stopPropagation(); openPay('${s.id}');">Изменить статус</button>
+          <button class="btn edit" onclick="event.stopPropagation(); openEdit('${s.id}');">Редакт.</button>
+          <button class="btn danger" onclick="event.stopPropagation(); openDelete('${s.id}');">Удалить</button>
+        </div>
+      `;
+      wrap.appendChild(row);
+    });
+
+    list.appendChild(wrap);
+  }
+
+  payMonth.onchange = draw;
+  payGroup.onchange = draw;
+  draw();
+}
+
+
   const arr=students.filter(s=>s.group===tab);
   if(arr.length===0){
     list.innerHTML=`<div class="card"><div class="small">Пока пусто. Нажмите “＋” чтобы добавить.</div></div>`;
