@@ -280,6 +280,52 @@ button{cursor:pointer}
       </div>
     </div>
   </div>
+  <!-- Edit -->
+<div id="modalEdit" class="modal hidden">
+  <div class="modal-card">
+    <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Редактировать</h3>
+    <div class="small" id="editSub"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1">
+        <div class="small">Группа</div>
+        <select id="editGroup">
+          <option>Детская</option>
+          <option>Взрослая</option>
+          <option>Женская</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <div class="small">Телефон</div>
+        <input id="editPhone" placeholder="+7..." inputmode="tel" />
+      </div>
+    </div>
+
+    <div id="editParentBox" style="margin-top:10px;">
+      <div class="small">ФИО родителя (только детская)</div>
+      <input id="editParentName" placeholder="ФИО родителя" />
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="small">ФИО ученика/спортсмена</div>
+      <input id="editName" placeholder="ФИО" />
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="small">Тариф по умолчанию</div>
+      <select id="editRate">
+        <option value="3000">3000 ₽</option>
+        <option value="1500">1500 ₽</option>
+      </select>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <button class="btn edit" onclick="saveEdit()">Сохранить</button>
+      <button class="btn" onclick="closeEdit()">Отмена</button>
+    </div>
+  </div>
+</div>
+
 
   <!-- Delete -->
   <div id="modalDelete" class="modal hidden">
@@ -459,7 +505,7 @@ function openInfo(id){
   badge.textContent="● "+statusLabel(v)+" — "+MONTHS[monthIndex];
   document.getElementById("infoPayBtn").onclick=()=>{closeInfo(); openPay(s.id);};
   document.getElementById("infoDelBtn").onclick=()=>{closeInfo(); openDelete(s.id);};
-  document.getElementById("infoEditBtn").onclick=()=>alert("Редактирование можно добавить следующим шагом.");
+  document.getElementById("infoEditBtn").onclick=()=>{ closeInfo(); openEdit(s.id); };
   document.getElementById("modalInfo").classList.remove("hidden");
 }
 function closeInfo(){ document.getElementById("modalInfo").classList.add("hidden"); }
@@ -519,6 +565,66 @@ function closeDelete(){ document.getElementById("modalDelete").classList.add("hi
 function closeAll(){ ["modalAdd","modalInfo","modalPay","modalDelete"].forEach(id=>document.getElementById(id).classList.add("hidden")); }
 
 setTab("Детская"); updateHeader(); closeAll();
+  function openEdit(id){
+  editId = id;
+  const i = findIndexById(id);
+  if(i === -1) return;
+
+  const s = students[i];
+
+  document.getElementById("editSub").innerHTML = `Редактирование: <b>${esc(s.name)}</b>`;
+  document.getElementById("editGroup").value = s.group;
+  document.getElementById("editPhone").value = s.phone || "";
+  document.getElementById("editName").value  = s.name || "";
+  document.getElementById("editParentName").value = s.parent || "";
+  document.getElementById("editRate").value = String(s.rate || 3000);
+
+  // показываем/прячем родителя
+  const box = document.getElementById("editParentBox");
+  if(s.group === "Детская") box.classList.remove("hidden");
+  else box.classList.add("hidden");
+
+  document.getElementById("modalEdit").classList.remove("hidden");
+}
+
+function saveEdit(){
+  const i = findIndexById(editId);
+  if(i === -1){ closeEdit(); return; }
+
+  const g = document.getElementById("editGroup").value;
+  const phone = document.getElementById("editPhone").value.trim();
+  const name  = document.getElementById("editName").value.trim();
+  const parent= document.getElementById("editParentName").value.trim();
+  const rate  = Number(document.getElementById("editRate").value);
+
+  if(!phone) return alert("Заполните телефон");
+  if(!name)  return alert("Заполните ФИО");
+  if(g === "Детская" && !parent) return alert("Для детской нужно ФИО родителя");
+
+  students[i].group = g;
+  students[i].phone = phone;
+  students[i].name  = name;
+  students[i].parent = (g === "Детская") ? parent : "";
+  students[i].rate = rate;
+
+  save();
+  closeEdit();
+  render();
+}
+
+function closeEdit(){
+  document.getElementById("modalEdit").classList.add("hidden");
+  editId = null;
+}
+
+// переключение поля "родитель" при смене группы в модалке
+document.getElementById("editGroup").addEventListener("change", ()=>{
+  const g = document.getElementById("editGroup").value;
+  const box = document.getElementById("editParentBox");
+  if(g === "Детская") box.classList.remove("hidden");
+  else { box.classList.add("hidden"); document.getElementById("editParentName").value = ""; }
+});
+
 
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));
