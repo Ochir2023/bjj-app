@@ -4,420 +4,152 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>BJJ — Учёт</title>
-
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0b0e">
 <style>
 :root{
-  --bg:#0a0b0e;
-  --panel:#11131a;
-  --text:#e9edf6;
-  --muted:#9aa3b2;
-  --line:rgba(255,255,255,.08);
-  --gold:#d3b45a;
-  --ok:#3ddc97;
-  --danger:#ff4d6d;
-  --warn:#f0c24b; /* желтый */
-  --shadow: 0 10px 30px rgba(0,0,0,.45);
-  --radius:16px;
-  --radius2:22px;
+  --bg:#0a0b0e; --panel:#11131a; --text:#e9edf6; --muted:#9aa3b2;
+  --line:rgba(255,255,255,.08); --gold:#d3b45a; --ok:#3ddc97; --danger:#ff4d6d; --warn:#f0c24b;
+  --shadow:0 10px 30px rgba(0,0,0,.45); --r:16px; --r2:22px;
 }
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
+*{box-sizing:border-box} html,body{height:100%}
 body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background:
-    radial-gradient(1200px 600px at 20% -20%, rgba(211,180,90,.18), transparent 60%),
-    radial-gradient(900px 500px at 110% 10%, rgba(61,220,151,.10), transparent 55%),
-    radial-gradient(900px 500px at 30% 120%, rgba(255,77,109,.10), transparent 55%),
-    var(--bg);
-  color:var(--text);
+  margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+  background: radial-gradient(1200px 600px at 20% -20%, rgba(211,180,90,.18), transparent 60%),
+              radial-gradient(900px 500px at 110% 10%, rgba(61,220,151,.10), transparent 55%),
+              radial-gradient(900px 500px at 30% 120%, rgba(255,77,109,.10), transparent 55%),
+              var(--bg);
 }
-.hidden{ display:none !important; }
-.container{ max-width: 980px; margin: 0 auto; padding: 14px; }
+.hidden{display:none!important}
+.container{max-width:980px;margin:0 auto;padding:14px}
 
-.topbar{
-  position: sticky; top:0; z-index:10;
-  backdrop-filter: blur(10px);
-  background: linear-gradient(180deg, rgba(10,11,14,.92), rgba(10,11,14,.70));
-  border-bottom: 1px solid var(--line);
-}
-.topbar-inner{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding: 12px 14px;
-}
-.brand{ display:flex; align-items:center; gap:10px; min-width: 170px; }
-.logo{
-  width:36px; height:36px; border-radius: 12px;
-  background:
-    radial-gradient(12px 12px at 30% 30%, rgba(240,214,138,.85), transparent 70%),
-    linear-gradient(135deg, rgba(211,180,90,.90), rgba(211,180,90,.25));
-  box-shadow: 0 8px 20px rgba(211,180,90,.18);
-  border: 1px solid rgba(211,180,90,.35);
-}
-.brand-title{ display:flex; flex-direction:column; line-height:1.1; }
-.brand-title b{ letter-spacing:.5px; text-transform:uppercase; font-size: 13px; }
-.brand-title span{ font-size:12px; color: var(--muted); }
-
-.tabs{
-  display:flex; gap:8px; overflow:auto; padding-bottom:2px;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar{ display:none; }
-.tab{
-  border:1px solid var(--line);
-  background: rgba(21,24,38,.55);
-  color: var(--text);
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  cursor:pointer;
-  white-space:nowrap;
-  transition: .15s ease;
-}
-.tab:hover{ border-color: rgba(211,180,90,.35); transform: translateY(-1px); }
-.tab.active{
-  border-color: rgba(211,180,90,.65);
-  background: linear-gradient(135deg, rgba(211,180,90,.22), rgba(21,24,38,.55));
-  box-shadow: 0 10px 25px rgba(211,180,90,.10);
-}
-
-.icon-btn{
-  border:1px solid rgba(211,180,90,.35);
-  background: linear-gradient(135deg, rgba(211,180,90,.22), rgba(21,24,38,.55));
-  color: var(--text);
-  border-radius: 14px;
-  padding: 8px 12px;
-  cursor:pointer;
-  transition: .15s ease;
-  min-width: 44px;
-  display:flex; justify-content:center; align-items:center;
-}
-.icon-btn:hover{ transform: translateY(-1px); border-color: rgba(211,180,90,.65); }
-.icon-btn span{ font-size: 20px; line-height: 1; }
-
-.hero{
-  margin-top: 14px;
-  border:1px solid var(--line);
-  border-radius: var(--radius2);
-  background:
-    linear-gradient(135deg, rgba(211,180,90,.10), rgba(17,19,26,.92)),
-    radial-gradient(800px 280px at 20% 10%, rgba(211,180,90,.10), transparent 60%),
-    var(--panel);
-  box-shadow: var(--shadow);
-  overflow:hidden;
-}
-.hero-inner{
-  padding: 16px 16px 12px;
-  display:flex; justify-content:space-between; gap:12px; align-items:flex-end;
-}
-.hero h1{ margin:0; font-size: 18px; letter-spacing:.3px; text-transform:uppercase; }
-.hero .meta{ margin-top:6px; font-size:12px; color: var(--muted); }
-.hero .pill{
-  font-size:12px;
-  border:1px solid rgba(211,180,90,.40);
-  color: rgba(240,214,138,.95);
-  background: rgba(211,180,90,.10);
-  padding:6px 10px;
-  border-radius: 999px;
-}
-
-.grid{ display:grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
-
-.card{
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(21,24,38,.90), rgba(17,19,26,.92));
-  box-shadow: 0 12px 30px rgba(0,0,0,.35);
-  padding: 12px;
-}
-.card .title{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px; }
-.card .title b{ font-size: 14px; text-transform: uppercase; letter-spacing:.4px; }
-.badge{
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border:1px solid var(--line);
-  color: var(--muted);
-}
-.small{ font-size: 12px; color: var(--muted); margin-top: 6px; }
-.kv{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-.kv .label{ color: var(--muted); font-size:12px; }
-.kv .value{ font-size:12px; }
-
-.status{
-  display:inline-flex; align-items:center; gap:6px;
-  font-size: 12px; margin-top: 8px;
-  padding: 6px 10px; border-radius: 999px;
-  border:1px solid var(--line);
-  background: rgba(0,0,0,.22);
-}
-.status.ok{ border-color: rgba(61,220,151,.30); color: rgba(61,220,151,.95); }
-.status.bad{ border-color: rgba(255,77,109,.30); color: rgba(255,77,109,.95); }
-.status.warn{ border-color: rgba(240,194,75,.35); color: rgba(240,194,75,.98); }
-
-.actions{ display:flex; gap:8px; margin-top: 10px; }
-.btn{
-  flex:1;
-  border-radius: 14px;
-  padding: 10px 12px;
-  font-size: 13px;
-  cursor:pointer;
-  border:1px solid var(--line);
-  background: rgba(255,255,255,.04);
-  color: var(--text);
-  transition:.15s ease;
-}
-.btn:hover{ transform: translateY(-1px); border-color: rgba(211,180,90,.35); }
-.btn.primary{
-  border-color: rgba(211,180,90,.35);
-  background: linear-gradient(135deg, rgba(211,180,90,.22), rgba(255,255,255,.04));
-}
-.btn.edit{
-  border-color: rgba(80,160,255,.28);
-  background: linear-gradient(135deg, rgba(80,160,255,.18), rgba(255,255,255,.04));
-}
-.btn.danger{
-  border-color: rgba(255,77,109,.30);
-  background: linear-gradient(135deg, rgba(255,77,109,.16), rgba(255,255,255,.04));
-}
-
-select,input{
-  width:100%;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  outline:none;
-  background: rgba(255,255,255,.04);
-  color: var(--text);
-}
-input::placeholder{ color: rgba(154,163,178,.85); }
-select{
-  appearance:none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, rgba(211,180,90,.9) 50%),
-    linear-gradient(135deg, rgba(211,180,90,.9) 50%, transparent 50%);
-  background-position:
-    calc(100% - 18px) calc(50% - 3px),
-    calc(100% - 12px) calc(50% - 3px);
-  background-size:6px 6px, 6px 6px;
-  background-repeat:no-repeat;
-}
-
-.pin-wrap{
-  min-height: 100vh;
-  display:flex; align-items:center; justify-content:center;
-  padding: 24px 14px;
+#pinScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 14px;
+  background: linear-gradient(180deg, rgba(10,11,14,.82), rgba(10,11,14,.94)), url("assets/bg-bjj.webp") center/cover no-repeat;
 }
 .pin-card{
-  width: 100%; max-width: 420px;
-  border-radius: 22px;
-  border:1px solid var(--line);
-  background:
-    linear-gradient(135deg, rgba(211,180,90,.12), rgba(17,19,26,.94)),
-    radial-gradient(700px 320px at 15% 5%, rgba(211,180,90,.14), transparent 60%),
-    var(--panel);
-  box-shadow: var(--shadow);
-  padding: 18px;
+  width:100%; max-width:420px; border-radius:var(--r2); border:1px solid var(--line);
+  background: linear-gradient(135deg, rgba(211,180,90,.12), rgba(17,19,26,.94)), var(--panel);
+  box-shadow:var(--shadow); padding:18px;
 }
-.pin-card h2{ margin: 0; letter-spacing:.4px; text-transform: uppercase; font-size: 16px; }
-.pin-card p{ margin: 8px 0 0; color: var(--muted); font-size: 12px; }
-.pin-actions{ display:flex; gap:10px; margin-top: 10px; }
-.pin-actions .btn{ flex:1; }
+.brand{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg, rgba(211,180,90,.90), rgba(211,180,90,.25));border:1px solid rgba(211,180,90,.35)}
+.brand b{letter-spacing:.5px;text-transform:uppercase;font-size:13px}
+.brand span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+input,select,button{
+  width:100%; padding:10px 12px; border-radius:14px; border:1px solid var(--line); outline:none;
+  background:rgba(255,255,255,.04); color:var(--text); font-size:14px;
+}
+button{cursor:pointer}
+.btn{border-radius:14px;padding:10px 12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text)}
+.btn.primary{border-color:rgba(211,180,90,.35);background:linear-gradient(135deg, rgba(211,180,90,.22), rgba(255,255,255,.04))}
+.btn.edit{border-color:rgba(80,160,255,.28);background:linear-gradient(135deg, rgba(80,160,255,.18), rgba(255,255,255,.04))}
+.btn.danger{border-color:rgba(255,77,109,.30);background:linear-gradient(135deg, rgba(255,77,109,.16), rgba(255,255,255,.04))}
+.row{display:flex;gap:10px;margin-top:10px}
+.row .btn{flex:1}
 
-.modal{
-  position:fixed; inset:0;
-  background: rgba(0,0,0,.62);
-  display:flex; align-items:center; justify-content:center;
-  padding: 18px; z-index: 50;
+#appScreen{min-height:100vh}
+.topbar{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
+  background:linear-gradient(180deg, rgba(10,11,14,.92), rgba(10,11,14,.70)); border-bottom:1px solid var(--line);
 }
-.modal-card{
-  width:100%; max-width: 520px;
-  border-radius: 22px;
-  border:1px solid var(--line);
-  background:
-    linear-gradient(135deg, rgba(211,180,90,.10), rgba(17,19,26,.95)),
-    var(--panel);
-  box-shadow: var(--shadow);
-  padding: 16px;
-}
-.modal-card h3{ margin:0; font-size: 14px; letter-spacing:.4px; text-transform: uppercase; }
-.modal-card .sub{ margin-top:6px; color: var(--muted); font-size: 12px; }
-.modal-actions{ display:flex; gap:10px; margin-top: 12px; }
-.modal-actions .btn{ flex:1; }
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px}
+.tabs{display:flex;gap:8px;overflow:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:1px solid var(--line);background:rgba(21,24,38,.55);color:var(--text);padding:8px 12px;border-radius:999px;font-size:13px;cursor:pointer;white-space:nowrap}
+.tab.active{border-color:rgba(211,180,90,.65);background:linear-gradient(135deg, rgba(211,180,90,.22), rgba(21,24,38,.55))}
+.icon-btn{border:1px solid rgba(211,180,90,.35);background:linear-gradient(135deg, rgba(211,180,90,.22), rgba(21,24,38,.55));
+  color:var(--text);border-radius:14px;padding:8px 12px;min-width:44px;display:flex;justify-content:center;align-items:center}
+.icon-btn span{font-size:20px;line-height:1}
 
-.split{ display:grid; grid-template-columns: 1fr; gap:10px; margin-top: 10px; }
-@media (min-width: 620px){ .split{ grid-template-columns: 1fr 1fr; } }
-hr{ border:none; border-top:1px solid var(--line); margin: 10px 0; }
+.hero{margin-top:14px;border:1px solid var(--line);border-radius:var(--r2);
+  background:linear-gradient(135deg, rgba(211,180,90,.10), rgba(17,19,26,.92)), var(--panel); box-shadow:var(--shadow);
+}
+.hero-inner{padding:16px 16px 12px;display:flex;justify-content:space-between;gap:12px;align-items:flex-end}
+.hero h1{margin:0;font-size:18px;letter-spacing:.3px;text-transform:uppercase}
+.hero .meta{margin-top:6px;font-size:12px;color:var(--muted)}
+.hero .pill{font-size:12px;border:1px solid rgba(211,180,90,.40);color:rgba(240,214,138,.95);background:rgba(211,180,90,.10);padding:6px 10px;border-radius:999px}
 
-/* ===== Compact Payments UI ===== */
-.pay-toolbar{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:flex-end;
-}
-.pay-toolbar .field{ flex:1; min-width: 160px; }
-.pay-kpis{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-.chip{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  background: rgba(255,255,255,.03);
-  font-size:12px;
-  color: var(--text);
-}
-.chip b{ color: var(--gold); font-weight:700; }
+.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:0 14px 14px;color:var(--muted);font-size:12px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
+.legend i.r{background:var(--danger)} .legend i.y{background:var(--warn)} .legend i.g{background:var(--ok)}
 
-details.pay-section{
-  border:1px solid var(--line);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(21,24,38,.90), rgba(17,19,26,.92));
-  box-shadow: 0 12px 30px rgba(0,0,0,.25);
-  padding: 10px;
-}
-details.pay-section + details.pay-section{ margin-top:10px; }
-details.pay-section summary{
-  cursor:pointer;
-  list-style:none;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-details.pay-section summary::-webkit-details-marker{ display:none; }
-.pay-section-title{
-  display:flex; align-items:center; gap:10px;
-  text-transform:uppercase;
-  letter-spacing:.35px;
-  font-size:13px;
-}
-.dot{
-  width:8px; height:8px; border-radius:50%;
-  background: var(--danger);
-  box-shadow: 0 0 0 3px rgba(255,255,255,.04);
-}
-.dot.ok{ background: var(--ok); }
-.dot.warn{ background: var(--warn); }
-.count{ color: var(--muted); font-size:12px; }
+.students-grid{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;margin-top:12px}
+@media (max-width: 299px){ .students-grid{grid-template-columns:1fr} }
 
-.pay-list{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
-.pay-row{
-  border:1px solid var(--line);
-  border-radius: 14px;
-  padding: 10px;
-  background: rgba(0,0,0,.18);
-  display:flex;
-  gap:10px;
-  align-items:center;
+.tile{
+  border:1px solid var(--line);border-radius:var(--r);
+  background: radial-gradient(600px 220px at 20% 10%, rgba(211,180,90,.10), transparent 60%),
+             linear-gradient(180deg, rgba(21,24,38,.92), rgba(17,19,26,.92));
+  box-shadow:0 12px 30px rgba(0,0,0,.25);
+  padding:12px;cursor:pointer;min-height:102px;display:flex;flex-direction:column;justify-content:space-between
 }
-.pay-main{ flex:1; min-width: 0; }
-.pay-name{
-  font-size:13px;
-  font-weight:700;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.pay-sub{
-  margin-top:4px;
-  font-size:12px;
-  color: var(--muted);
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.badge-mini{
-  font-size:11px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border:1px solid var(--line);
-  color: var(--muted);
-}
-.state{
-  font-size:12px;
-  padding:4px 8px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  white-space:nowrap;
-}
-.state.ok{ border-color: rgba(61,220,151,.30); color: rgba(61,220,151,.95); }
-.state.bad{ border-color: rgba(255,77,109,.30); color: rgba(255,77,109,.95); }
-.state.warn{ border-color: rgba(240,194,75,.35); color: rgba(240,194,75,.98); }
+.tile-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.tile-name{font-size:13px;font-weight:800;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tile-sub{margin-top:6px;font-size:11px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill2{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.16)}
+.pill2.gold{border-color:rgba(211,180,90,.25)}
 
-.pay-actions{ display:flex; gap:8px; }
-.pay-actions .mini{
-  flex:0 0 auto;
-  padding:8px 10px;
-  border-radius: 12px;
-  font-size:12px;
-}
-  /* ===== ФОН ДЛЯ PIN ЭКРАНА ===== */
-#pinScreen{
-  background:
-    linear-gradient(180deg, rgba(10,11,14,.85), rgba(10,11,14,.95)),
-    url("assets/bg-bjj.webp") center/cover no-repeat;
-}
+.dots{display:flex;gap:6px;align-items:center}
+.dot{width:10px;height:10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);box-shadow:0 0 0 3px rgba(255,255,255,.03)}
+.dot.red{background:var(--danger)} .dot.yellow{background:var(--warn)} .dot.green{background:var(--ok)}
+.dot.active{transform:scale(1.25)}
 
+.tile-icons{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.ico{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:14px}
+.ico.gold{border-color:rgba(211,180,90,.28)} .ico.muted{color:var(--muted)}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px;z-index:50}
+.modal-card{width:100%;max-width:560px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(135deg, rgba(211,180,90,.10), rgba(17,19,26,.95)), var(--panel);box-shadow:var(--shadow);padding:16px}
+.small{font-size:12px;color:var(--muted)}
+.kv{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.kv .label{color:var(--muted);font-size:12px}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;margin-top:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.22)}
+.status.ok{border-color:rgba(61,220,151,.30);color:rgba(61,220,151,.95)}
+.status.bad{border-color:rgba(255,77,109,.30);color:rgba(255,77,109,.95)}
+.status.warn{border-color:rgba(240,194,75,.35);color:rgba(240,194,75,.98)}
 </style>
 </head>
-
 <body>
 
-<!-- PIN -->
-<div id="pinScreen" class="pin-wrap">
+<div id="pinScreen">
   <div class="pin-card">
-    <div class="brand" style="margin-bottom:10px;">
+    <div class="brand">
       <div class="logo"></div>
-      <div class="brand-title">
+      <div>
         <b>BJJ • УЧЁТ</b>
-        <span>Тарифы 3000/1500 + “не ходил”</span>
+        <span>Плитки 2 в ряд + иконки статуса</span>
       </div>
     </div>
-
-    <h2>Вход по PIN</h2>
-    <p>По умолчанию PIN: <b>1234</b></p>
-
+    <h2 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:16px;">Вход по PIN</h2>
+    <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">PIN по умолчанию: <b>1234</b></p>
     <div style="margin-top:12px;">
       <input id="pinInput" type="password" placeholder="Введите PIN" inputmode="numeric" />
-      <div class="pin-actions">
+      <div class="row">
         <button class="btn primary" onclick="checkPin()">Войти</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- APP -->
 <div id="appScreen" class="hidden">
-
   <div class="topbar">
     <div class="topbar-inner container">
-      <div class="brand">
+      <div class="brand" style="margin:0">
         <div class="logo"></div>
         <div class="brand-title">
           <b>BJJ • УЧЁТ</b>
           <span id="topHint">Группа: Детская</span>
         </div>
       </div>
-
-      <button class="icon-btn" onclick="openAdd()" title="Добавить">
-        <span>＋</span>
-      </button>
+      <button class="icon-btn" onclick="openAdd()" title="Добавить"><span>＋</span></button>
     </div>
 
     <div class="container" style="padding-top:0; padding-bottom:12px;">
       <div class="tabs">
-        <button class="tab active" id="tabKids"  onclick="setMainTab('Детская')">Детская</button>
-        <button class="tab" id="tabAdult" onclick="setMainTab('Взрослая')">Взрослая</button>
-        <button class="tab" id="tabWomen" onclick="setMainTab('Женская')">Женская</button>
-        <button class="tab" id="tabPay"   onclick="setMainTab('Оплата')">Оплата</button>
+        <button class="tab active" id="tabKids"  onclick="setTab('Детская')">Детская</button>
+        <button class="tab" id="tabAdult" onclick="setTab('Взрослая')">Взрослая</button>
+        <button class="tab" id="tabWomen" onclick="setTab('Женская')">Женская</button>
       </div>
     </div>
   </div>
@@ -427,27 +159,33 @@ details.pay-section summary::-webkit-details-marker{ display:none; }
       <div class="hero-inner">
         <div>
           <h1 id="heroTitle">Детская группа</h1>
-          <div class="meta" id="heroMeta">Тарифы: 3000 ₽ / 1500 ₽ / не ходил</div>
+          <div class="meta">Иконки: 🔴 не оплатил • 🟡 не ходил • 🟢 оплатил</div>
         </div>
-        <div class="pill" id="heroPill">Месяц: <span id="pillMonth"></span></div>
+        <div class="pill">Месяц: <span id="pillMonth"></span></div>
+      </div>
+      <div class="legend">
+        <span><i class="g"></i> оплатил</span>
+        <span><i class="y"></i> не ходил</span>
+        <span><i class="r"></i> не оплатил</span>
+        <span style="border:1px solid var(--line);border-radius:999px;padding:2px 8px;">тап по ученику → подробности</span>
       </div>
     </div>
 
-    <div class="grid" id="list"></div>
+    <div id="list" class="students-grid"></div>
   </div>
 
-  <!-- MODAL: ADD -->
+  <!-- Add -->
   <div id="modalAdd" class="modal hidden">
     <div class="modal-card">
-      <h3>Добавить</h3>
-      <div class="sub">Группа записи: <b id="addGroupLabel">Детская</b></div>
+      <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Добавить</h3>
+      <div class="small">Группа записи: <b id="addGroupLabel">Детская</b></div>
 
-      <div class="split">
-        <div id="addParentBox">
-          <div class="small">Родитель (только для детской)</div>
+      <div class="row">
+        <div style="flex:1" id="addParentBox">
+          <div class="small">Родитель (только детская)</div>
           <input id="addParentName" placeholder="ФИО родителя" />
         </div>
-        <div>
+        <div style="flex:1">
           <div class="small">Телефон</div>
           <input id="addPhone" placeholder="+7..." inputmode="tel" />
         </div>
@@ -459,33 +197,63 @@ details.pay-section summary::-webkit-details-marker{ display:none; }
       </div>
 
       <div style="margin-top:10px;">
-        <div class="small">Базовый тариф ученика (по умолчанию)</div>
+        <div class="small">Тариф по умолчанию</div>
         <select id="addRate">
           <option value="3000">3000 ₽</option>
           <option value="1500">1500 ₽</option>
         </select>
       </div>
 
-      <div class="modal-actions">
+      <div class="row">
         <button class="btn primary" onclick="saveNewStudent()">Сохранить</button>
         <button class="btn" onclick="closeAdd()">Отмена</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: PAY -->
+  <!-- Info -->
+  <div id="modalInfo" class="modal hidden">
+    <div class="modal-card">
+      <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Ученик</h3>
+      <div class="small" id="infoSub"></div>
+
+      <div class="card" style="margin-top:10px;">
+        <div class="kv"><span class="label">ФИО:</span> <span id="infoName"></span></div>
+        <div class="kv" style="margin-top:6px;"><span class="label">Группа:</span> <span id="infoGroup"></span></div>
+        <div id="infoParentRow" class="kv" style="margin-top:6px;">
+          <span class="label">Родитель:</span> <span id="infoParent"></span>
+        </div>
+        <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span id="infoPhone"></span></div>
+        <div class="kv" style="margin-top:6px;"><span class="label">Тариф:</span> <span id="infoRate"></span></div>
+        <div style="margin-top:10px;">
+          <span class="status" id="infoStatusBadge"></span>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn primary" id="infoPayBtn">Оплата</button>
+        <button class="btn edit" id="infoEditBtn">Редакт.</button>
+        <button class="btn danger" id="infoDelBtn">Удалить</button>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="closeInfo()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pay -->
   <div id="modalPay" class="modal hidden">
     <div class="modal-card">
-      <h3>Оплата / Статус</h3>
-      <div class="sub" id="payPrompt"></div>
+      <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Оплата / Статус</h3>
+      <div class="small" id="payPrompt"></div>
 
-      <div class="split">
-        <div>
+      <div class="row">
+        <div style="flex:1">
           <div class="small">Месяц</div>
           <select id="payMonthSelect"></select>
         </div>
-        <div>
-          <div class="small">Статус за месяц</div>
+        <div style="flex:1">
+          <div class="small">Статус</div>
           <select id="payAmountSelect">
             <option value="3000">Оплатил 3000 ₽</option>
             <option value="1500">Оплатил 1500 ₽</option>
@@ -496,640 +264,255 @@ details.pay-section summary::-webkit-details-marker{ display:none; }
       </div>
 
       <div style="margin-top:10px;">
-        <label style="display:flex; gap:10px; align-items:center; font-size:12px; color:var(--muted);">
-          <input type="checkbox" id="rememberRate" />
-          Запомнить выбранную сумму как тариф ученика (только 1500/3000)
+        <label class="small" style="display:flex;gap:10px;align-items:center;">
+          <input type="checkbox" id="rememberRate" style="width:auto" />
+          Запомнить 1500/3000 как тариф ученика
         </label>
       </div>
 
-      <div class="modal-actions">
+      <div class="row">
         <button class="btn primary" onclick="applyPay()">Применить</button>
         <button class="btn" onclick="closePay()">Отмена</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: EDIT -->
-  <div id="modalEdit" class="modal hidden">
-    <div class="modal-card">
-      <h3>Редактировать</h3>
-      <div class="sub" id="editSub"></div>
-
-      <div class="split">
-        <div>
-          <div class="small">Группа</div>
-          <select id="editGroup">
-            <option>Детская</option>
-            <option>Взрослая</option>
-            <option>Женская</option>
-          </select>
-        </div>
-        <div>
-          <div class="small">Телефон</div>
-          <input id="editPhone" placeholder="+7..." inputmode="tel" />
-        </div>
-      </div>
-
-      <div id="editParentBox" style="margin-top:10px;">
-        <div class="small">ФИО родителя (только для детской)</div>
-        <input id="editParentName" placeholder="ФИО родителя" />
-      </div>
-
-      <div style="margin-top:10px;">
-        <div class="small">ФИО ученика/спортсмена</div>
-        <input id="editName" placeholder="ФИО" />
-      </div>
-
-      <div style="margin-top:10px;">
-        <div class="small">Тариф ученика (по умолчанию)</div>
-        <select id="editRate">
-          <option value="3000">3000 ₽</option>
-          <option value="1500">1500 ₽</option>
-        </select>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn edit" onclick="saveEdit()">Сохранить</button>
-        <button class="btn" onclick="closeEdit()">Отмена</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: DELETE -->
+  <!-- Delete -->
   <div id="modalDelete" class="modal hidden">
     <div class="modal-card">
-      <h3>Удаление</h3>
-      <div class="sub" id="deletePrompt"></div>
-
-      <div class="modal-actions">
+      <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Удаление</h3>
+      <div class="small" id="deletePrompt"></div>
+      <div class="row">
         <button class="btn danger" onclick="confirmDelete()">Удалить</button>
         <button class="btn" onclick="closeDelete()">Отмена</button>
       </div>
     </div>
   </div>
-<!-- MODAL: INFO (подробно) -->
-<div id="modalInfo" class="modal hidden">
-  <div class="modal-card">
-    <h3>Ученик</h3>
-    <div class="sub" id="infoSub"></div>
-
-    <div class="card" style="margin-top:10px;">
-      <div class="kv"><span class="label">ФИО:</span> <span class="value" id="infoName"></span></div>
-      <div class="kv" style="margin-top:6px;"><span class="label">Группа:</span> <span class="value" id="infoGroup"></span></div>
-
-      <div id="infoParentRow" class="kv" style="margin-top:6px;">
-        <span class="label">Родитель:</span> <span class="value" id="infoParent"></span>
-      </div>
-
-      <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value" id="infoPhone"></span></div>
-      <div class="kv" style="margin-top:6px;"><span class="label">Тариф:</span> <span class="value" id="infoRate"></span></div>
-
-      <div style="margin-top:10px;">
-        <span class="status" id="infoStatusBadge"></span>
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn primary" id="infoPayBtn">Оплата</button>
-      <button class="btn edit" id="infoEditBtn">Редакт.</button>
-      <button class="btn danger" id="infoDelBtn">Удалить</button>
-    </div>
-
-    <div class="modal-actions" style="margin-top:10px;">
-      <button class="btn" onclick="closeInfo()">Закрыть</button>
-    </div>
-  </div>
-</div>
 </div>
 
 <script>
-const PIN = "1234";
-const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const PIN="1234";
+const MONTHS=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+let tab="Детская";
+let monthIndex=new Date().getMonth();
+let students=JSON.parse(localStorage.getItem("bjj_students"))||[];
+let payId=null, delId=null, editId=null;
 
-let mainTab = "Детская";
-let payGroupTab = "Детская";
-let selectedMonthIndex = new Date().getMonth();
+function uid(){return (crypto?.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));}
+function save(){localStorage.setItem("bjj_students",JSON.stringify(students));}
+function findIndexById(id){return students.findIndex(s=>s.id===id);}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 
-let students = JSON.parse(localStorage.getItem("bjj_students")) || [];
-let payId = null, delId = null, editId = null;
-
-function uid(){
-  return (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)));
-}
-function escapeHtml(str){
-  return String(str ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[m]));
-}
-function save(){ localStorage.setItem("bjj_students", JSON.stringify(students)); }
-function findIndexById(id){ return students.findIndex(s=>s.id===id); }
-
-/*
-payments[month] = number:
-  3000 / 1500 = оплата
-  0 = не оплатил
-  -1 = не ходил
-*/
 function monthStatusValue(s, mi){
-  const raw = s.payments ? s.payments[mi] : 0;
-  if(typeof raw === "number") return raw;
-  if(raw === true) return 3000; // старые данные
-  if(raw === false) return 0;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : 0;
+  const raw=s.payments? s.payments[mi] : 0;
+  if(typeof raw==="number") return raw;
+  if(raw===true) return 3000;
+  if(raw===false) return 0;
+  const n=Number(raw); return Number.isFinite(n)?n:0;
 }
 function statusLabel(v){
-  if(v === -1) return "Не ходил";
-  if(v === 0) return "Не оплатил";
-  if(v > 0) return `Оплачено (${v} ₽)`;
+  if(v===-1) return "Не ходил";
+  if(v===0) return "Не оплатил";
+  if(v>0) return `Оплачено (${v} ₽)`;
   return "Не оплатил";
 }
-function statusClass(v){
-  if(v === -1) return "warn";
-  if(v > 0) return "ok";
-  return "bad";
-}
-function incomeFromStatus(v){
-  return (v > 0) ? v : 0; // не ходил и не оплатил = 0
-}
+function statusClass(v){ if(v===-1) return "warn"; if(v>0) return "ok"; return "bad"; }
 
-/* migration: ensure id, rate, payments numeric */
 (function migrate(){
-  const nowMonth = new Date().getMonth();
-  students = students.map(s=>{
-    const id = s.id || uid();
-    const group = s.group || "Детская";
-    const parent = s.parent || "";
-    const phone = s.phone || "";
-    const name = s.name || s.student || "";
-    const rate = Number(s.rate || 3000);
-
-    let payments = (s.payments && typeof s.payments === "object") ? s.payments : {};
-    if(typeof s.paid === "boolean"){
-      payments[nowMonth] = s.paid ? 3000 : 0;
-    }
+  const nowMonth=new Date().getMonth();
+  students=students.map(s=>{
+    const id=s.id||uid();
+    const group=s.group||"Детская";
+    const parent=s.parent||"";
+    const phone=s.phone||"";
+    const name=s.name||s.student||"";
+    const rate=Number(s.rate||3000);
+    let payments=(s.payments && typeof s.payments==="object")?s.payments:{};
+    if(typeof s.paid==="boolean") payments[nowMonth]=s.paid?3000:0;
     Object.keys(payments).forEach(k=>{
-      const val = payments[k];
-      if(val === true) payments[k] = 3000;
-      if(val === false) payments[k] = 0;
-      if(typeof payments[k] !== "number") payments[k] = Number(payments[k]) || 0;
+      const val=payments[k];
+      if(val===true) payments[k]=3000;
+      if(val===false) payments[k]=0;
+      if(typeof payments[k]!=="number") payments[k]=Number(payments[k])||0;
     });
-
-    return { id, group, parent, phone, name, rate, payments };
+    return {id, group, parent, phone, name, rate, payments};
   });
   save();
 })();
 
-function setActiveTabBtn(){
-  const map = {"Детская":"tabKids","Взрослая":"tabAdult","Женская":"tabWomen","Оплата":"tabPay"};
-  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-  const id = map[mainTab];
-  if(id) document.getElementById(id).classList.add("active");
-}
-function updateHeader(){
-  document.getElementById("pillMonth").textContent = MONTHS[selectedMonthIndex];
-  document.getElementById("topHint").textContent = (mainTab === "Оплата")
-    ? `Оплата • ${MONTHS[selectedMonthIndex]}`
-    : `Группа: ${mainTab} • ${MONTHS[selectedMonthIndex]}`;
-
-  document.getElementById("heroTitle").textContent = (mainTab === "Оплата") ? "Оплата" : `${mainTab} группа`;
-}
-
-function checkPin(){
-  if(document.getElementById("pinInput").value === PIN){
-    document.getElementById("pinScreen").classList.add("hidden");
-    document.getElementById("appScreen").classList.remove("hidden");
-    closeAllModals();
-    render();
-  } else alert("Неверный PIN");
-}
-
-function setMainTab(tab){
-  mainTab = tab;
-  setActiveTabBtn();
+function setTab(t){
+  tab=t;
+  document.getElementById("tabKids").classList.toggle("active", t==="Детская");
+  document.getElementById("tabAdult").classList.toggle("active", t==="Взрослая");
+  document.getElementById("tabWomen").classList.toggle("active", t==="Женская");
   render();
 }
-
-function emptyCard(text){
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="title"><b>Пусто</b><span class="badge">INFO</span></div>
-    <div class="small">${escapeHtml(text)}</div>
-  `;
-  return card;
+function updateHeader(){
+  document.getElementById("pillMonth").textContent=MONTHS[monthIndex];
+  document.getElementById("topHint").textContent=`Группа: ${tab} • ${MONTHS[monthIndex]}`;
+  document.getElementById("heroTitle").textContent=`${tab} группа`;
 }
-
+function checkPin(){
+  if(document.getElementById("pinInput").value===PIN){
+    document.getElementById("pinScreen").classList.add("hidden");
+    document.getElementById("appScreen").classList.remove("hidden");
+    closeAll(); render();
+  } else alert("Неверный PIN");
+}
 function render(){
   updateHeader();
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  if(mainTab === "Оплата"){
-    renderPaymentsTab();
+  const list=document.getElementById("list");
+  list.innerHTML="";
+  const arr=students.filter(s=>s.group===tab);
+  if(arr.length===0){
+    list.innerHTML=`<div class="card"><div class="small">Пока пусто. Нажмите “＋” чтобы добавить.</div></div>`;
     return;
   }
-
-  const groupList = students.filter(s=>s.group === mainTab);
-  if(groupList.length === 0){
-    list.appendChild(emptyCard(`В группе "${mainTab}" пока нет учеников. Нажмите “＋” чтобы добавить.`));
-    return;
-  }
-
-  groupList.forEach(s=>{
-    const v = monthStatusValue(s, selectedMonthIndex);
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="title">
-        <b>${escapeHtml(s.name)}</b>
-        <span class="badge">${escapeHtml(s.group)} • тариф ${s.rate} ₽</span>
+  arr.forEach(s=>{
+    const v=monthStatusValue(s, monthIndex);
+    const cls=statusClass(v);
+    const tile=document.createElement("div");
+    tile.className="tile";
+    tile.onclick=()=>openInfo(s.id);
+    const rate=(s.rate===1500)?"1500":"3000";
+    tile.innerHTML=`
+      <div>
+        <div class="tile-top">
+          <div class="tile-name">${esc(s.name)}</div>
+          <div class="dots" title="${esc(statusLabel(v))}">
+            <span class="dot red ${cls==="bad"?"active":""}"></span>
+            <span class="dot yellow ${cls==="warn"?"active":""}"></span>
+            <span class="dot green ${cls==="ok"?"active":""}"></span>
+          </div>
+        </div>
+        <div class="tile-sub">
+          <span class="pill2">${esc(MONTHS[monthIndex])}</span>
+          <span class="pill2 gold">₽ ${rate}</span>
+          ${s.group==="Детская" && s.parent ? `<span class="pill2">👪</span>` : ``}
+        </div>
       </div>
-
-      ${s.parent ? `<div class="kv"><span class="label">Родитель:</span> <span class="value">${escapeHtml(s.parent)}</span></div>` : ``}
-      <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span class="value">${escapeHtml(s.phone)}</span></div>
-
-      <div class="status ${statusClass(v)}">
-        ● ${statusLabel(v)} — ${MONTHS[selectedMonthIndex]}
-      </div>
-
-      <div class="actions">
-        <button class="btn primary" onclick="openPay('${s.id}')">Оплата/Статус</button>
-        <button class="btn edit" onclick="openEdit('${s.id}')">Редактировать</button>
-        <button class="btn danger" onclick="openDelete('${s.id}')">Удалить</button>
+      <div class="tile-icons">
+        <span class="ico muted">📞</span>
+        <span class="ico gold">💳</span>
+        <span class="ico muted">ℹ️</span>
       </div>
     `;
-    list.appendChild(card);
+    list.appendChild(tile);
   });
 }
 
-/* ===== Compact payments UI ===== */
-function payStudentCard(s){
-  const v = monthStatusValue(s, selectedMonthIndex);
-  const cls = statusClass(v);
-  const label = statusLabel(v);
-
-  const row = document.createElement("div");
-  row.className = "pay-row";
-
-  row.innerHTML = `
-    <div class="pay-main">
-      <div class="pay-name">${escapeHtml(s.name)}</div>
-      <div class="pay-sub">
-        <span class="badge-mini">${escapeHtml(s.group)}</span>
-        <span class="badge-mini">тариф ${s.rate} ₽</span>
-        ${s.parent ? `<span class="badge-mini">родитель: ${escapeHtml(s.parent)}</span>` : ``}
-        <span class="badge-mini">тел: ${escapeHtml(s.phone)}</span>
-      </div>
-    </div>
-
-    <div class="state ${cls}">${escapeHtml(label)}</div>
-
-    <div class="pay-actions">
-      <button class="btn primary mini" onclick="openPay('${s.id}')">Оплата</button>
-      <button class="btn edit mini" onclick="openEdit('${s.id}')">Ред.</button>
-      <button class="btn danger mini" onclick="openDelete('${s.id}')">Удал.</button>
-    </div>
-  `;
-  return row;
-}
-
-function renderPaymentsTab(){
-  const list = document.getElementById("list");
-
-  // toolbar
-  const control = document.createElement("div");
-  control.className = "card";
-  control.innerHTML = `
-    <div class="title"><b>Оплата</b><span class="badge">${MONTHS[selectedMonthIndex]}</span></div>
-
-    <div class="pay-toolbar" style="margin-top:10px;">
-      <div class="field">
-        <div class="small">Месяц</div>
-        <select id="monthSelect"></select>
-      </div>
-      <div class="field">
-        <div class="small">Группа</div>
-        <select id="groupSelect">
-          <option>Детская</option>
-          <option>Взрослая</option>
-          <option>Женская</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="pay-kpis" id="kpis"></div>
-
-    <div class="small" style="margin-top:10px;">
-      Статусы: <b>3000 ₽</b> / <b>1500 ₽</b> / <b style="color:var(--warn)">не ходил</b> / не оплатил
-    </div>
-  `;
-  list.appendChild(control);
-
-  const monthSelect = control.querySelector("#monthSelect");
-  monthSelect.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===selectedMonthIndex?"selected":""}>${m}</option>`).join("");
-  monthSelect.onchange = () => { selectedMonthIndex = Number(monthSelect.value); render(); };
-
-  const groupSelect = control.querySelector("#groupSelect");
-  groupSelect.value = payGroupTab;
-  groupSelect.onchange = () => { payGroupTab = groupSelect.value; render(); };
-
-  const groupList = students.filter(s=>s.group === payGroupTab);
-
-  let groupSum = 0;
-  let totalSum = 0;
-
-  students.forEach(s=> totalSum += incomeFromStatus(monthStatusValue(s, selectedMonthIndex)));
-  groupList.forEach(s=> groupSum += incomeFromStatus(monthStatusValue(s, selectedMonthIndex)));
-
-  const notPaid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === 0);
-  const notCame = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) === -1);
-  const paid = groupList.filter(s=>monthStatusValue(s, selectedMonthIndex) > 0);
-
-  // KPIs
-  const kpis = control.querySelector("#kpis");
-  kpis.innerHTML = `
-    <span class="chip">Группа: <b>${groupSum} ₽</b></span>
-    <span class="chip">Всего: <b>${totalSum} ₽</b></span>
-    <span class="chip">Не оплатили: <b>${notPaid.length}</b></span>
-    <span class="chip" style="border-color: rgba(240,194,75,.35);">Не ходили: <b>${notCame.length}</b></span>
-    <span class="chip" style="border-color: rgba(61,220,151,.30);">Оплатили: <b>${paid.length}</b></span>
-  `;
-
-  if(groupList.length === 0){
-    list.appendChild(emptyCard(`В группе "${payGroupTab}" нет учеников. Нажмите “＋” чтобы добавить.`));
-    return;
-  }
-
-  const sec1 = document.createElement("details");
-  sec1.className = "pay-section";
-  sec1.open = true;
-  sec1.innerHTML = `
-    <summary>
-      <div class="pay-section-title"><span class="dot"></span> Не оплатили</div>
-      <div class="count">${notPaid.length} чел.</div>
-    </summary>
-    <div class="pay-list" id="secNotPaid"></div>
-  `;
-  list.appendChild(sec1);
-  const secNotPaid = sec1.querySelector("#secNotPaid");
-  if(notPaid.length) notPaid.forEach(s=> secNotPaid.appendChild(payStudentCard(s)));
-  else secNotPaid.innerHTML = `<div class="small">Нет</div>`;
-
-  const sec2 = document.createElement("details");
-  sec2.className = "pay-section";
-  sec2.open = false;
-  sec2.innerHTML = `
-    <summary>
-      <div class="pay-section-title"><span class="dot warn"></span> Не ходили</div>
-      <div class="count">${notCame.length} чел.</div>
-    </summary>
-    <div class="pay-list" id="secNotCame"></div>
-  `;
-  list.appendChild(sec2);
-  const secNotCame = sec2.querySelector("#secNotCame");
-  if(notCame.length) notCame.forEach(s=> secNotCame.appendChild(payStudentCard(s)));
-  else secNotCame.innerHTML = `<div class="small">Нет</div>`;
-
-  const sec3 = document.createElement("details");
-  sec3.className = "pay-section";
-  sec3.open = false;
-  sec3.innerHTML = `
-    <summary>
-      <div class="pay-section-title"><span class="dot ok"></span> Оплатили</div>
-      <div class="count">${paid.length} чел.</div>
-    </summary>
-    <div class="pay-list" id="secPaid"></div>
-  `;
-  list.appendChild(sec3);
-  const secPaid = sec3.querySelector("#secPaid");
-  if(paid.length) paid.forEach(s=> secPaid.appendChild(payStudentCard(s)));
-  else secPaid.innerHTML = `<div class="small">Нет</div>`;
-}
-
-/* Add */
 function openAdd(){
-  const addGroup = (mainTab === "Оплата") ? payGroupTab : mainTab;
-  modalAdd.dataset.addGroup = addGroup;
-
-  document.getElementById("addGroupLabel").textContent = addGroup;
-
-  const addParentBox = document.getElementById("addParentBox");
-  const addNameLabel = document.getElementById("addNameLabel");
-  const addStudentName = document.getElementById("addStudentName");
-
-  if(addGroup === "Детская"){
-    addParentBox.classList.remove("hidden");
-    addNameLabel.textContent = "ФИО ученика";
-    addStudentName.placeholder = "ФИО ребёнка";
-  } else {
-    addParentBox.classList.add("hidden");
-    addNameLabel.textContent = "ФИО спортсмена";
-    addStudentName.placeholder = "ФИО спортсмена";
-    document.getElementById("addParentName").value = "";
-  }
-
+  modalAdd.dataset.addGroup=tab;
+  document.getElementById("addGroupLabel").textContent=tab;
+  const parentBox=document.getElementById("addParentBox");
+  const nameLabel=document.getElementById("addNameLabel");
+  const nameInput=document.getElementById("addStudentName");
+  if(tab==="Детская"){ parentBox.classList.remove("hidden"); nameLabel.textContent="ФИО ученика"; nameInput.placeholder="ФИО ребёнка"; }
+  else { parentBox.classList.add("hidden"); document.getElementById("addParentName").value=""; nameLabel.textContent="ФИО спортсмена"; nameInput.placeholder="ФИО спортсмена"; }
   document.getElementById("modalAdd").classList.remove("hidden");
 }
 function closeAdd(){ document.getElementById("modalAdd").classList.add("hidden"); }
 
 function saveNewStudent(){
-  const addGroup = modalAdd.dataset.addGroup || "Детская";
-  const parent = document.getElementById("addParentName").value.trim();
-  const phone = document.getElementById("addPhone").value.trim();
-  const name  = document.getElementById("addStudentName").value.trim();
-  const rate  = Number(document.getElementById("addRate").value);
-
-  if(addGroup === "Детская" && (!parent || !name)){ alert("Для детской: ФИО родителя и ученика."); return; }
-  if(addGroup !== "Детская" && !name){ alert("Заполните ФИО спортсмена."); return; }
-  if(!phone){ alert("Заполните телефон."); return; }
-
-  students.push({ id: uid(), group:addGroup, parent:addGroup==="Детская"?parent:"", phone, name, rate, payments:{} });
-
-  document.getElementById("addParentName").value = "";
-  document.getElementById("addPhone").value = "";
-  document.getElementById("addStudentName").value = "";
-  document.getElementById("addRate").value = "3000";
-
-  save();
-  closeAdd();
+  const g=modalAdd.dataset.addGroup||"Детская";
+  const parent=document.getElementById("addParentName").value.trim();
+  const phone=document.getElementById("addPhone").value.trim();
+  const name=document.getElementById("addStudentName").value.trim();
+  const rate=Number(document.getElementById("addRate").value);
+  if(g==="Детская" && (!parent || !name)) return alert("Для детской: ФИО родителя и ученика.");
+  if(g!=="Детская" && !name) return alert("Заполните ФИО спортсмена.");
+  if(!phone) return alert("Заполните телефон.");
+  students.push({id:uid(), group:g, parent:(g==="Детская"?parent:""), phone, name, rate, payments:{}});
+  save(); closeAdd();
+  document.getElementById("addParentName").value="";
+  document.getElementById("addPhone").value="";
+  document.getElementById("addStudentName").value="";
+  document.getElementById("addRate").value="3000";
   render();
 }
 
-/* Pay modal (apply status) */
-function fillPayMonthSelect(selected){
-  const sel = document.getElementById("payMonthSelect");
-  sel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
+function openInfo(id){
+  const i=findIndexById(id); if(i===-1) return;
+  const s=students[i];
+  const v=monthStatusValue(s, monthIndex);
+  const cls=statusClass(v);
+  document.getElementById("infoSub").innerHTML=`Месяц: <b>${MONTHS[monthIndex]}</b>`;
+  document.getElementById("infoName").textContent=s.name||"";
+  document.getElementById("infoGroup").textContent=s.group||"";
+  document.getElementById("infoPhone").textContent=s.phone||"";
+  document.getElementById("infoRate").textContent=(s.rate||3000)+" ₽";
+  const parentRow=document.getElementById("infoParentRow");
+  if(s.group==="Детская"){ parentRow.classList.remove("hidden"); document.getElementById("infoParent").textContent=s.parent||""; }
+  else parentRow.classList.add("hidden");
+  const badge=document.getElementById("infoStatusBadge");
+  badge.className="status "+cls;
+  badge.textContent="● "+statusLabel(v)+" — "+MONTHS[monthIndex];
+  document.getElementById("infoPayBtn").onclick=()=>{closeInfo(); openPay(s.id);};
+  document.getElementById("infoDelBtn").onclick=()=>{closeInfo(); openDelete(s.id);};
+  document.getElementById("infoEditBtn").onclick=()=>alert("Редактирование можно добавить следующим шагом.");
+  document.getElementById("modalInfo").classList.remove("hidden");
 }
+function closeInfo(){ document.getElementById("modalInfo").classList.add("hidden"); }
 
+function fillMonthSelect(sel, selected){
+  sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
+}
 function openPay(id){
-  payId = id;
-  const idx = findIndexById(id);
-  if(idx === -1) return;
+  payId=id;
+  const i=findIndexById(id); if(i===-1) return;
+  const s=students[i];
+  const monthSel=document.getElementById("payMonthSelect");
+  const amountSel=document.getElementById("payAmountSelect");
+  fillMonthSelect(monthSel, monthIndex);
+  document.getElementById("rememberRate").checked=false;
 
-  const s = students[idx];
-  fillPayMonthSelect(selectedMonthIndex);
-
-  const monthSel = document.getElementById("payMonthSelect");
-  const amountSel = document.getElementById("payAmountSelect");
-  const remember = document.getElementById("rememberRate");
-  remember.checked = false;
-
-  // default: current month status if exists, else student's rate
-  const currentV = monthStatusValue(s, selectedMonthIndex);
-  if(currentV === 3000 || currentV === 1500 || currentV === -1 || currentV === 0){
-    amountSel.value = String(currentV);
-  } else {
-    amountSel.value = String(s.rate || 3000);
-  }
-
-  const prompt = document.getElementById("payPrompt");
-  const setPrompt = (mi)=>{
-    const v = monthStatusValue(s, mi);
-    const cls = statusClass(v);
-    const col = (cls==="ok") ? "var(--ok)" : (cls==="warn") ? "var(--warn)" : "var(--danger)";
-    prompt.innerHTML = `Ученик: <b>${escapeHtml(s.name)}</b><br>
-      <span class="small">Статус за ${MONTHS[mi]}: <b style="color:${col}">${escapeHtml(statusLabel(v))}</b></span>`;
+  const cur=monthStatusValue(s, monthIndex);
+  amountSel.value=String([3000,1500,-1,0].includes(cur)?cur:(s.rate||3000));
+  const setPrompt=(mi)=>{
+    const v=monthStatusValue(s, mi);
+    document.getElementById("payPrompt").innerHTML=`Ученик: <b>${esc(s.name)}</b><br><span class="small">За ${MONTHS[mi]}: <b>${esc(statusLabel(v))}</b></span>`;
   };
-
-  setPrompt(selectedMonthIndex);
-
-  monthSel.onchange = ()=>{
-    const mi = Number(monthSel.value);
+  setPrompt(monthIndex);
+  monthSel.onchange=()=>{
+    const mi=Number(monthSel.value);
     setPrompt(mi);
-    const vv = monthStatusValue(s, mi);
-    if(vv === 3000 || vv === 1500 || vv === -1 || vv === 0){
-      amountSel.value = String(vv);
-    } else {
-      amountSel.value = String(s.rate || 3000);
-    }
+    const vv=monthStatusValue(s, mi);
+    amountSel.value=String([3000,1500,-1,0].includes(vv)?vv:(s.rate||3000));
   };
-
   document.getElementById("modalPay").classList.remove("hidden");
 }
-
 function applyPay(){
-  const idx = findIndexById(payId);
-  if(idx === -1){ closePay(); return; }
-
-  const mi = Number(document.getElementById("payMonthSelect").value);
-  const val = Number(document.getElementById("payAmountSelect").value);
-  const remember = document.getElementById("rememberRate").checked;
-
-  if(!students[idx].payments) students[idx].payments = {};
-  students[idx].payments[mi] = val;
-
-  if(remember && (val === 1500 || val === 3000)){
-    students[idx].rate = val;
-  }
-
-  selectedMonthIndex = mi;
-  save();
-  closePay();
-  render();
+  const i=findIndexById(payId); if(i===-1){closePay();return;}
+  const mi=Number(document.getElementById("payMonthSelect").value);
+  const val=Number(document.getElementById("payAmountSelect").value);
+  const remember=document.getElementById("rememberRate").checked;
+  if(!students[i].payments) students[i].payments={};
+  students[i].payments[mi]=val;
+  if(remember && (val===1500 || val===3000)) students[i].rate=val;
+  monthIndex=mi;
+  save(); closePay(); render();
 }
+function closePay(){ document.getElementById("modalPay").classList.add("hidden"); payId=null; }
 
-function closePay(){
-  document.getElementById("modalPay").classList.add("hidden");
-  payId = null;
-}
-
-/* Edit */
-document.getElementById("editGroup").addEventListener("change", ()=>{
-  const g = document.getElementById("editGroup").value;
-  const box = document.getElementById("editParentBox");
-  if(g === "Детская") box.classList.remove("hidden");
-  else { box.classList.add("hidden"); document.getElementById("editParentName").value = ""; }
-});
-
-function openEdit(id){
-  editId = id;
-  const idx = findIndexById(id);
-  if(idx === -1) return;
-
-  const s = students[idx];
-  document.getElementById("editSub").innerHTML = `Редактирование: <b>${escapeHtml(s.name)}</b>`;
-  document.getElementById("editGroup").value = s.group;
-  document.getElementById("editPhone").value = s.phone || "";
-  document.getElementById("editName").value  = s.name || "";
-  document.getElementById("editParentName").value = s.parent || "";
-  document.getElementById("editRate").value = String(s.rate || 3000);
-
-  const box = document.getElementById("editParentBox");
-  if(s.group === "Детская") box.classList.remove("hidden");
-  else box.classList.add("hidden");
-
-  document.getElementById("modalEdit").classList.remove("hidden");
-}
-
-function saveEdit(){
-  const idx = findIndexById(editId);
-  if(idx === -1){ closeEdit(); return; }
-
-  const g = document.getElementById("editGroup").value;
-  const phone = document.getElementById("editPhone").value.trim();
-  const name  = document.getElementById("editName").value.trim();
-  const parent= document.getElementById("editParentName").value.trim();
-  const rate  = Number(document.getElementById("editRate").value);
-
-  if(!phone){ alert("Заполните телефон."); return; }
-  if(!name){ alert("Заполните ФИО."); return; }
-  if(g === "Детская" && !parent){ alert("Для детской: ФИО родителя."); return; }
-
-  students[idx].group = g;
-  students[idx].phone = phone;
-  students[idx].name  = name;
-  students[idx].parent= (g === "Детская") ? parent : "";
-  students[idx].rate = rate;
-
-  if(mainTab !== "Оплата" && mainTab !== g){
-    mainTab = g;
-    setActiveTabBtn();
-  }
-
-  save();
-  closeEdit();
-  render();
-}
-function closeEdit(){
-  document.getElementById("modalEdit").classList.add("hidden");
-  editId = null;
-}
-
-/* Delete */
 function openDelete(id){
-  delId = id;
-  const idx = findIndexById(id);
-  if(idx === -1) return;
-
-  document.getElementById("deletePrompt").innerHTML = `Удалить ученика <b>${escapeHtml(students[idx].name)}</b>?`;
+  delId=id;
+  const i=findIndexById(id); if(i===-1) return;
+  document.getElementById("deletePrompt").innerHTML=`Удалить ученика <b>${esc(students[i].name)}</b>?`;
   document.getElementById("modalDelete").classList.remove("hidden");
 }
 function confirmDelete(){
-  const idx = findIndexById(delId);
-  if(idx === -1){ closeDelete(); return; }
-
-  students.splice(idx, 1);
-  save();
-  closeDelete();
-  render();
+  const i=findIndexById(delId); if(i===-1){closeDelete();return;}
+  students.splice(i,1); save(); closeDelete(); render();
 }
-function closeDelete(){
-  document.getElementById("modalDelete").classList.add("hidden");
-  delId = null;
-}
+function closeDelete(){ document.getElementById("modalDelete").classList.add("hidden"); delId=null; }
 
-/* common */
-function closeAllModals(){
-  document.getElementById("modalAdd").classList.add("hidden");
-  document.getElementById("modalPay").classList.add("hidden");
-  document.getElementById("modalEdit").classList.add("hidden");
-  document.getElementById("modalDelete").classList.add("hidden");
-}
+function closeAll(){ ["modalAdd","modalInfo","modalPay","modalDelete"].forEach(id=>document.getElementById(id).classList.add("hidden")); }
 
-setActiveTabBtn();
-updateHeader();
-closeAllModals();
+setTab("Детская"); updateHeader(); closeAll();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));
+}
 </script>
 </body>
 </html>
