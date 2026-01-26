@@ -378,12 +378,16 @@ function render(){
     tile.innerHTML=`
       <div>
         <div class="tile-top">
-          <div class="tile-name">${esc(s.name)}</div>
           <div class="dots" title="${esc(statusLabel(v))}">
-            <span class="dot red ${cls==="bad"?"active":""}"></span>
-            <span class="dot yellow ${cls==="warn"?"active":""}"></span>
-            <span class="dot green ${cls==="ok"?"active":""}"></span>
-          </div>
+  ${
+    cls==="bad"
+      ? '<span class="dot red active"></span>'
+      : cls==="warn"
+      ? '<span class="dot yellow active"></span>'
+      : '<span class="dot green active"></span>'
+  }
+</div>
+
         </div>
         <div class="tile-sub">
           <span class="pill2">${esc(MONTHS[monthIndex])}</span>
