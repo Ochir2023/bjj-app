@@ -242,6 +242,31 @@ button{cursor:pointer}
   border-radius:12px;
   font-size:12px;
 }
+  .grid-header{
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: rgba(21,24,38,.72);
+  padding: 10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.grid-header .left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+  font-size:12px;
+}
+.grid-header .count{ color: var(--muted); font-size:12px; }
+.grid-dot{ width:10px; height:10px; border-radius:50%; border:1px solid rgba(255,255,255,.12); }
+.grid-dot.red{ background: var(--danger); }
+.grid-dot.yellow{ background: var(--warn); }
+.grid-dot.green{ background: var(--ok); }
+
 
 </style>
 </head>
@@ -870,133 +895,154 @@ if("serviceWorker" in navigator){
 function renderPaymentsAdmin(){
   const list = document.getElementById("list");
   list.innerHTML = "";
-  // чтобы не мешали плиточные стили — у нас тут свои блоки
-  list.className = ""; 
+  list.className = "students-grid"; // ВАЖНО: включаем сетку 2 в ряд
 
-  const wrap = document.createElement("div");
-  wrap.className = "pay-admin";
-  list.appendChild(wrap);
-
-  // ШАПКА: месяц + группы + KPI
+  // ===== Верхняя панель (месяц + группы + KPI) =====
   const head = document.createElement("div");
-  head.className = "pay-head";
+  head.className = "grid-header";
   head.innerHTML = `
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-      <div style="font-weight:900;letter-spacing:.3px;text-transform:uppercase;">Оплата</div>
-      <div class="badge">${MONTHS[monthIndex]}</div>
+    <div class="left">
+      <span style="font-weight:900;">Оплата</span>
+      <span class="badge">${MONTHS[monthIndex]}</span>
     </div>
-
-    <div class="pay-controls" style="margin-top:10px;">
-      <div class="field">
-        <div class="small">Месяц</div>
-        <select id="payMonthSelect"></select>
-      </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <select id="payMonthTop" style="width:auto; padding:8px 10px; border-radius:12px;"></select>
     </div>
-
-    <div class="pay-subtabs" style="margin-top:10px;">
-      <button class="pay-subtab" id="payKids">Детская</button>
-      <button class="pay-subtab" id="payAdult">Взрослая</button>
-      <button class="pay-subtab" id="payWomen">Женская</button>
-    </div>
-
-    <div class="pay-kpis" id="payKpis"></div>
   `;
-  wrap.appendChild(head);
+  list.appendChild(head);
 
-  // month select
-  const sel = head.querySelector("#payMonthSelect");
-  sel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===monthIndex?"selected":""}>${m}</option>`).join("");
-  sel.onchange = () => { monthIndex = Number(sel.value); render(); };
+  const monthSel = head.querySelector("#payMonthTop");
+  monthSel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===monthIndex?"selected":""}>${m}</option>`).join("");
+  monthSel.onchange = () => { monthIndex = Number(monthSel.value); render(); };
 
-  // subtabs
-  const btnKids  = head.querySelector("#payKids");
-  const btnAdult = head.querySelector("#payAdult");
-  const btnWomen = head.querySelector("#payWomen");
+  // ===== Подвкладки групп (второй ряд, но тоже в сетке, чтобы не ломало) =====
+  const groupBar = document.createElement("div");
+  groupBar.className = "grid-header";
+  groupBar.innerHTML = `
+    <div class="left">
+      <span class="small" style="color:var(--muted);">Группа:</span>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+      <button class="pay-subtab" id="pgKids">Детская</button>
+      <button class="pay-subtab" id="pgAdult">Взрослая</button>
+      <button class="pay-subtab" id="pgWomen">Женская</button>
+    </div>
+  `;
+  list.appendChild(groupBar);
+
+  const pgKids  = groupBar.querySelector("#pgKids");
+  const pgAdult = groupBar.querySelector("#pgAdult");
+  const pgWomen = groupBar.querySelector("#pgWomen");
 
   function setPayGroup(g){
     payGroup = g;
-    btnKids.classList.toggle("active", g==="Детская");
-    btnAdult.classList.toggle("active", g==="Взрослая");
-    btnWomen.classList.toggle("active", g==="Женская");
+    pgKids.classList.toggle("active", g==="Детская");
+    pgAdult.classList.toggle("active", g==="Взрослая");
+    pgWomen.classList.toggle("active", g==="Женская");
     draw();
   }
-
-  btnKids.onclick  = ()=>setPayGroup("Детская");
-  btnAdult.onclick = ()=>setPayGroup("Взрослая");
-  btnWomen.onclick = ()=>setPayGroup("Женская");
-
+  pgKids.onclick  = ()=>setPayGroup("Детская");
+  pgAdult.onclick = ()=>setPayGroup("Взрослая");
+  pgWomen.onclick = ()=>setPayGroup("Женская");
   setPayGroup(payGroup);
 
+  // ===== KPI строка =====
+  const kpi = document.createElement("div");
+  kpi.className = "grid-header";
+  kpi.innerHTML = `<div class="left"><span class="small" id="kpiText"></span></div>`;
+  list.appendChild(kpi);
+
   function draw(){
-    const groupList = students.filter(s=>s.group===payGroup);
+    const groupList = students.filter(s=>s.group === payGroup);
 
-    const notPaid = groupList.filter(s=>monthStatusValue(s, monthIndex)===0);
-    const notCame = groupList.filter(s=>monthStatusValue(s, monthIndex)===-1);
-    const paid    = groupList.filter(s=>monthStatusValue(s, monthIndex)>0);
+    // сортировка по статусам: оплатил -> не ходил -> не оплатил
+    const paid    = groupList.filter(s=>monthStatusValue(s, monthIndex) > 0);
+    const notCame = groupList.filter(s=>monthStatusValue(s, monthIndex) === -1);
+    const notPaid = groupList.filter(s=>monthStatusValue(s, monthIndex) === 0);
 
-    // доходы
-    let sumGroup = 0;
-    let sumAll = 0;
+    // доход по группе и общий
+    let sumGroup = 0, sumAll = 0;
     students.forEach(s=>{ const v=monthStatusValue(s, monthIndex); if(v>0) sumAll += v; });
     groupList.forEach(s=>{ const v=monthStatusValue(s, monthIndex); if(v>0) sumGroup += v; });
 
-    head.querySelector("#payKpis").innerHTML =
-      `Группа: <b>${sumGroup} ₽</b> • Всего: <b>${sumAll} ₽</b> • ✅ ${paid.length} • 🟡 ${notCame.length} • ❌ ${notPaid.length}`;
+    kpi.querySelector("#kpiText").innerHTML =
+      `Доход группы: <b style="color:var(--gold)">${sumGroup} ₽</b> • Всего: <b style="color:var(--gold)">${sumAll} ₽</b>
+       • ✅ ${paid.length} • 🟡 ${notCame.length} • ❌ ${notPaid.length}`;
 
-    // секции
-    wrap.querySelectorAll("details.pay-section").forEach(d=>d.remove());
+    // Удаляем старые плитки/заголовки кроме первых 3 header-блоков
+    while(list.children.length > 3) list.removeChild(list.lastChild);
 
-    wrap.appendChild(makePaySection("Не оплатили", "red", notPaid));
-    wrap.appendChild(makePaySection("Не ходили", "yellow", notCame));
-    wrap.appendChild(makePaySection("Оплатили", "green", paid));
+    // Рисуем секциями (заголовок на всю ширину + плитки 2 в ряд)
+    addSection("Оплатили", "green", paid);
+    addSection("Не ходили", "yellow", notCame);
+    addSection("Не оплатили", "red", notPaid);
   }
 
-  function makePaySection(title, dotColor, arr){
-    const det = document.createElement("details");
-    det.className = "pay-section";
-    det.open = (title==="Не оплатили");
-
-    det.innerHTML = `
-      <summary>
-        <div class="pay-title">
-          <span class="pay-dot ${dotColor}"></span>
-          ${title}
-        </div>
-        <div class="small">${arr.length} чел.</div>
-      </summary>
-      <div class="pay-list"></div>
+  function addSection(title, color, arr){
+    const h = document.createElement("div");
+    h.className = "grid-header";
+    h.innerHTML = `
+      <div class="left">
+        <span class="grid-dot ${color}"></span>
+        ${title}
+      </div>
+      <div class="count">${arr.length} чел.</div>
     `;
+    list.appendChild(h);
 
-    const box = det.querySelector(".pay-list");
-    if(arr.length===0){
-      box.innerHTML = `<div class="small">Нет</div>`;
-      return det;
+    if(arr.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "card";
+      empty.style.gridColumn = "1 / -1";
+      empty.innerHTML = `<div class="small">Нет</div>`;
+      list.appendChild(empty);
+      return;
     }
 
     arr.forEach(s=>{
       const v = monthStatusValue(s, monthIndex);
-      const cls = statusClass(v); // ok/warn/bad
-      const row = document.createElement("div");
-      row.className = "pay-row";
-      row.innerHTML = `
-        <div class="pay-main" onclick="openInfo('${s.id}')">
-          <div class="pay-name">${esc(s.name)}</div>
-          <div class="pay-sub">тел: ${esc(s.phone)}${(s.group==="Детская" && s.parent)?(" • родитель: "+esc(s.parent)):""}</div>
+      const cls = statusClass(v);
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.onclick = ()=>openInfo(s.id);
+
+      // одна точка статуса
+      const dotHtml =
+        cls==="bad" ? '<span class="dot red active"></span>' :
+        cls==="warn" ? '<span class="dot yellow active"></span>' :
+        '<span class="dot green active"></span>';
+
+      // Чуть больше инфы для оплаты: телефон + сумма/статус
+      tile.innerHTML = `
+        <div>
+          <div class="tile-top">
+            <div class="tile-name">${esc(s.name)}</div>
+            <div class="dots" title="${esc(statusLabel(v))}">${dotHtml}</div>
+          </div>
+
+          <div class="tile-sub">
+            <span class="pill2">${esc(s.phone || "")}</span>
+            <span class="pill2 gold">${esc(statusLabel(v))}</span>
+          </div>
         </div>
 
-        <div class="pay-state ${cls}">${esc(statusLabel(v))}</div>
-
-        <div class="pay-actions">
-          <button class="btn primary mini" onclick="event.stopPropagation(); openPay('${s.id}')">Статус</button>
-          <button class="btn edit mini" onclick="event.stopPropagation(); openEdit('${s.id}')">Ред.</button>
-          <button class="btn danger mini" onclick="event.stopPropagation(); openDelete('${s.id}')">Удал.</button>
+        <div class="tile-icons">
+          <button class="btn primary mini" style="padding:8px 10px;border-radius:12px;font-size:12px;"
+            onclick="event.stopPropagation(); openPay('${s.id}')">Статус</button>
+          <button class="btn edit mini" style="padding:8px 10px;border-radius:12px;font-size:12px;"
+            onclick="event.stopPropagation(); openEdit('${s.id}')">Ред.</button>
+          <button class="btn danger mini" style="padding:8px 10px;border-radius:12px;font-size:12px;"
+            onclick="event.stopPropagation(); openDelete('${s.id}')">Удал.</button>
         </div>
       `;
-      box.appendChild(row);
+      list.appendChild(tile);
     });
-
-    return det;
   }
+
+  draw();
+}
+
 }
 
 </script>
