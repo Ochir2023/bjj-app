@@ -575,6 +575,11 @@ function render(){
   if(tab === "Оплата"){
   renderPaymentScreen();
   return;
+    if(tab === "Оплата"){
+  renderPaymentsAdmin();
+  return;
+}
+
 }
   function renderPaymentScreen(){
   const list = document.getElementById("list");
