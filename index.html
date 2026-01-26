@@ -154,6 +154,7 @@ button{cursor:pointer}
         <button class="tab active" id="tabKids"  onclick="setTab('Детская')">Детская</button>
         <button class="tab" id="tabAdult" onclick="setTab('Взрослая')">Взрослая</button>
         <button class="tab" id="tabWomen" onclick="setTab('Женская')">Женская</button>
+        <button class="tab" id="tabPay" onclick="setTab('Оплата')">Оплата</button>
       </div>
     </div>
   </div>
@@ -395,8 +396,10 @@ function setTab(t){
   document.getElementById("tabKids").classList.toggle("active", t==="Детская");
   document.getElementById("tabAdult").classList.toggle("active", t==="Взрослая");
   document.getElementById("tabWomen").classList.toggle("active", t==="Женская");
+  document.getElementById("tabPay").classList.toggle("active", t==="Оплата");
   render();
 }
+
 function updateHeader(){
   document.getElementById("pillMonth").textContent=MONTHS[monthIndex];
   document.getElementById("topHint").textContent=`Группа: ${tab} • ${MONTHS[monthIndex]}`;
