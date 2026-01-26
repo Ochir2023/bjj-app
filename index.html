@@ -865,6 +865,140 @@ document.getElementById("editGroup").addEventListener("change", ()=>{
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));
 }
+  let payGroup = "Детская";
+
+function renderPaymentsAdmin(){
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  // чтобы не мешали плиточные стили — у нас тут свои блоки
+  list.className = ""; 
+
+  const wrap = document.createElement("div");
+  wrap.className = "pay-admin";
+  list.appendChild(wrap);
+
+  // ШАПКА: месяц + группы + KPI
+  const head = document.createElement("div");
+  head.className = "pay-head";
+  head.innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+      <div style="font-weight:900;letter-spacing:.3px;text-transform:uppercase;">Оплата</div>
+      <div class="badge">${MONTHS[monthIndex]}</div>
+    </div>
+
+    <div class="pay-controls" style="margin-top:10px;">
+      <div class="field">
+        <div class="small">Месяц</div>
+        <select id="payMonthSelect"></select>
+      </div>
+    </div>
+
+    <div class="pay-subtabs" style="margin-top:10px;">
+      <button class="pay-subtab" id="payKids">Детская</button>
+      <button class="pay-subtab" id="payAdult">Взрослая</button>
+      <button class="pay-subtab" id="payWomen">Женская</button>
+    </div>
+
+    <div class="pay-kpis" id="payKpis"></div>
+  `;
+  wrap.appendChild(head);
+
+  // month select
+  const sel = head.querySelector("#payMonthSelect");
+  sel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}" ${i===monthIndex?"selected":""}>${m}</option>`).join("");
+  sel.onchange = () => { monthIndex = Number(sel.value); render(); };
+
+  // subtabs
+  const btnKids  = head.querySelector("#payKids");
+  const btnAdult = head.querySelector("#payAdult");
+  const btnWomen = head.querySelector("#payWomen");
+
+  function setPayGroup(g){
+    payGroup = g;
+    btnKids.classList.toggle("active", g==="Детская");
+    btnAdult.classList.toggle("active", g==="Взрослая");
+    btnWomen.classList.toggle("active", g==="Женская");
+    draw();
+  }
+
+  btnKids.onclick  = ()=>setPayGroup("Детская");
+  btnAdult.onclick = ()=>setPayGroup("Взрослая");
+  btnWomen.onclick = ()=>setPayGroup("Женская");
+
+  setPayGroup(payGroup);
+
+  function draw(){
+    const groupList = students.filter(s=>s.group===payGroup);
+
+    const notPaid = groupList.filter(s=>monthStatusValue(s, monthIndex)===0);
+    const notCame = groupList.filter(s=>monthStatusValue(s, monthIndex)===-1);
+    const paid    = groupList.filter(s=>monthStatusValue(s, monthIndex)>0);
+
+    // доходы
+    let sumGroup = 0;
+    let sumAll = 0;
+    students.forEach(s=>{ const v=monthStatusValue(s, monthIndex); if(v>0) sumAll += v; });
+    groupList.forEach(s=>{ const v=monthStatusValue(s, monthIndex); if(v>0) sumGroup += v; });
+
+    head.querySelector("#payKpis").innerHTML =
+      `Группа: <b>${sumGroup} ₽</b> • Всего: <b>${sumAll} ₽</b> • ✅ ${paid.length} • 🟡 ${notCame.length} • ❌ ${notPaid.length}`;
+
+    // секции
+    wrap.querySelectorAll("details.pay-section").forEach(d=>d.remove());
+
+    wrap.appendChild(makePaySection("Не оплатили", "red", notPaid));
+    wrap.appendChild(makePaySection("Не ходили", "yellow", notCame));
+    wrap.appendChild(makePaySection("Оплатили", "green", paid));
+  }
+
+  function makePaySection(title, dotColor, arr){
+    const det = document.createElement("details");
+    det.className = "pay-section";
+    det.open = (title==="Не оплатили");
+
+    det.innerHTML = `
+      <summary>
+        <div class="pay-title">
+          <span class="pay-dot ${dotColor}"></span>
+          ${title}
+        </div>
+        <div class="small">${arr.length} чел.</div>
+      </summary>
+      <div class="pay-list"></div>
+    `;
+
+    const box = det.querySelector(".pay-list");
+    if(arr.length===0){
+      box.innerHTML = `<div class="small">Нет</div>`;
+      return det;
+    }
+
+    arr.forEach(s=>{
+      const v = monthStatusValue(s, monthIndex);
+      const cls = statusClass(v); // ok/warn/bad
+      const row = document.createElement("div");
+      row.className = "pay-row";
+      row.innerHTML = `
+        <div class="pay-main" onclick="openInfo('${s.id}')">
+          <div class="pay-name">${esc(s.name)}</div>
+          <div class="pay-sub">тел: ${esc(s.phone)}${(s.group==="Детская" && s.parent)?(" • родитель: "+esc(s.parent)):""}</div>
+        </div>
+
+        <div class="pay-state ${cls}">${esc(statusLabel(v))}</div>
+
+        <div class="pay-actions">
+          <button class="btn primary mini" onclick="event.stopPropagation(); openPay('${s.id}')">Статус</button>
+          <button class="btn edit mini" onclick="event.stopPropagation(); openEdit('${s.id}')">Ред.</button>
+          <button class="btn danger mini" onclick="event.stopPropagation(); openDelete('${s.id}')">Удал.</button>
+        </div>
+      `;
+      box.appendChild(row);
+    });
+
+    return det;
+  }
+}
+
 </script>
 </body>
 </html>
