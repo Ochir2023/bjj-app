@@ -81,10 +81,18 @@ button{cursor:pointer}
 .hero h1{margin:0;font-size:18px;letter-spacing:.3px;text-transform:uppercase}
 .hero .meta{margin-top:6px;font-size:12px;color:var(--muted)}
 .hero .pill{font-size:12px;border:1px solid rgba(211,180,90,.40);color:rgba(240,214,138,.95);background:rgba(211,180,90,.10);padding:6px 10px;border-radius:999px;white-space:nowrap}
-.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:0 14px 14px;color:var(--muted);font-size:12px}
+.hero-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:0 14px 14px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px}
 .legend span{display:inline-flex;gap:6px;align-items:center}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
 .legend i.r{background:var(--danger)} .legend i.y{background:var(--warn)} .legend i.g{background:var(--ok)}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  width:auto; border:1px solid var(--line); background:rgba(255,255,255,.03); color:var(--text);
+  padding:7px 10px; border-radius:999px; font-size:12px; cursor:pointer; white-space:nowrap;
+}
+.chip.active{border-color:rgba(211,180,90,.65);background:linear-gradient(135deg, rgba(211,180,90,.18), rgba(255,255,255,.03))}
 
 /* GRID 2 columns */
 .students-grid{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;margin-top:12px}
@@ -188,7 +196,7 @@ button{cursor:pointer}
       <div class="logo"></div>
       <div>
         <b>BJJ • УЧЁТ</b>
-        <span>Плитки 2× • 1 иконка статуса • Оплата сортировка</span>
+        <span>Месяц+фильтр в группах • Оплата • Затраты</span>
       </div>
     </div>
 
@@ -223,6 +231,7 @@ button{cursor:pointer}
         <button class="tab" id="tabAdult" onclick="setTab('Взрослая')">Взрослая</button>
         <button class="tab" id="tabWomen" onclick="setTab('Женская')">Женская</button>
         <button class="tab" id="tabPay"   onclick="setTab('Оплата')">Оплата</button>
+        <button class="tab" id="tabExp"   onclick="setTab('Затраты')">Затраты</button>
       </div>
     </div>
   </div>
@@ -234,12 +243,27 @@ button{cursor:pointer}
           <h1 id="heroTitle">Детская группа</h1>
           <div class="meta" id="heroMeta">Тап по плитке → подробности</div>
         </div>
-        <div class="pill">Месяц: <span id="pillMonth"></span></div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div class="pill">Месяц: <span id="pillMonth"></span></div>
+          <div style="width:160px; max-width:42vw;">
+            <select id="monthSelect"></select>
+          </div>
+        </div>
       </div>
-      <div class="legend" id="legendBox">
-        <span><i class="g"></i> оплатил</span>
-        <span><i class="y"></i> не ходил</span>
-        <span><i class="r"></i> не оплатил</span>
+
+      <div class="hero-controls">
+        <div class="legend" id="legendBox">
+          <span><i class="g"></i> оплатил</span>
+          <span><i class="y"></i> не ходил</span>
+          <span><i class="r"></i> не оплатил</span>
+        </div>
+
+        <div class="chips" id="statusChips">
+          <button class="chip active" id="chipAll" onclick="setGroupFilter('all')">Все</button>
+          <button class="chip" id="chipPaid" onclick="setGroupFilter('paid')">Оплатили</button>
+          <button class="chip" id="chipNoShow" onclick="setGroupFilter('noshow')">Не ходили</button>
+          <button class="chip" id="chipUnpaid" onclick="setGroupFilter('unpaid')">Не оплатили</button>
+        </div>
       </div>
     </div>
 
@@ -406,6 +430,40 @@ button{cursor:pointer}
       </div>
     </div>
   </div>
+
+  <!-- EXPENSES ADD/EDIT -->
+  <div id="modalExp" class="modal hidden">
+    <div class="modal-card">
+      <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Расход</h3>
+      <div class="small" id="expSub"></div>
+
+      <div class="row">
+        <div style="flex:1">
+          <div class="small">Месяц</div>
+          <select id="expMonth"></select>
+        </div>
+        <div style="flex:1">
+          <div class="small">Сумма (₽)</div>
+          <input id="expAmount" type="number" placeholder="Напр. 5000" inputmode="numeric" />
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <div class="small">Категория</div>
+        <input id="expCategory" placeholder="Аренда / форма / реклама..." />
+      </div>
+
+      <div style="margin-top:10px;">
+        <div class="small">Комментарий</div>
+        <input id="expNote" placeholder="По желанию" />
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button class="btn primary" onclick="saveExpense()">Сохранить</button>
+        <button class="btn" onclick="closeExpense()">Отмена</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -415,13 +473,19 @@ const MONTHS=["Январь","Февраль","Март","Апрель","Май"
 let tab="Детская";
 let monthIndex=new Date().getMonth();
 let payGroup="Детская";
+let groupFilter="all"; // all | paid | unpaid | noshow
 
 let students=JSON.parse(localStorage.getItem("bjj_students"))||[];
+let expenses=JSON.parse(localStorage.getItem("bjj_expenses"))||[]; // {id, month, amount, category, note, ts}
+
 let payId=null, delId=null, editId=null;
+let expEditId=null;
 
 function uid(){return (crypto?.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));}
 function save(){localStorage.setItem("bjj_students",JSON.stringify(students));}
+function saveExpenses(){localStorage.setItem("bjj_expenses",JSON.stringify(expenses));}
 function findIndexById(id){return students.findIndex(s=>s.id===id);}
+function findExpenseIndex(id){return expenses.findIndex(e=>e.id===id);}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 
 function monthStatusValue(s, mi){
@@ -443,7 +507,33 @@ function statusDot(cls){
   if(cls==="warn") return '<span class="dot yellow active"></span>';
   return '<span class="dot green active"></span>';
 }
+function incomeForMonth(mi, group=null){
+  let sum=0;
+  students.forEach(s=>{
+    if(group && s.group!==group) return;
+    const v=monthStatusValue(s,mi);
+    if(v>0) sum+=v;
+  });
+  return sum;
+}
+function expensesForMonth(mi){
+  return expenses.filter(e=>Number(e.month)===mi).reduce((a,e)=>a+(Number(e.amount)||0),0);
+}
 
+function fillMonthSelect(sel, selected){
+  sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
+}
+
+function setGroupFilter(f){
+  groupFilter=f;
+  document.getElementById("chipAll").classList.toggle("active", f==="all");
+  document.getElementById("chipPaid").classList.toggle("active", f==="paid");
+  document.getElementById("chipNoShow").classList.toggle("active", f==="noshow");
+  document.getElementById("chipUnpaid").classList.toggle("active", f==="unpaid");
+  render();
+}
+
+/* migrate old student shape if needed */
 (function migrate(){
   const nowMonth=new Date().getMonth();
   students=students.map(s=>{
@@ -466,23 +556,37 @@ function statusDot(cls){
   save();
 })();
 
+/* NAV */
 function setTab(t){
   tab=t;
   document.getElementById("tabKids").classList.toggle("active", t==="Детская");
   document.getElementById("tabAdult").classList.toggle("active", t==="Взрослая");
   document.getElementById("tabWomen").classList.toggle("active", t==="Женская");
   document.getElementById("tabPay").classList.toggle("active", t==="Оплата");
+  document.getElementById("tabExp").classList.toggle("active", t==="Затраты");
   render();
 }
+
 function updateHeader(){
   document.getElementById("pillMonth").textContent=MONTHS[monthIndex];
-  document.getElementById("topHint").textContent = (tab==="Оплата")
-    ? `Оплата • ${MONTHS[monthIndex]}`
-    : `Группа: ${tab} • ${MONTHS[monthIndex]}`;
-  document.getElementById("heroTitle").textContent = (tab==="Оплата") ? "Оплата" : `${tab} группа`;
-  document.getElementById("heroMeta").textContent  = (tab==="Оплата")
-    ? "Выберите группу внутри оплаты • Плитки 2× • Сортировка по статусу"
-    : "Тап по плитке → подробности";
+  fillMonthSelect(document.getElementById("monthSelect"), monthIndex);
+
+  document.getElementById("topHint").textContent =
+    (tab==="Оплата") ? `Оплата • ${MONTHS[monthIndex]}` :
+    (tab==="Затраты") ? `Затраты • ${MONTHS[monthIndex]}` :
+    `Группа: ${tab} • ${MONTHS[monthIndex]}`;
+
+  document.getElementById("heroTitle").textContent =
+    (tab==="Оплата") ? "Оплата" :
+    (tab==="Затраты") ? "Затраты" :
+    `${tab} группа`;
+
+  document.getElementById("heroMeta").textContent =
+    (tab==="Оплата") ? "2 плитки в ряд • Секции: оплатили/не ходили/не оплатили" :
+    (tab==="Затраты") ? "Добавляйте расходы и смотрите прибыль за месяц" :
+    "Выберите месяц и фильтр статуса • Тап по плитке → подробности";
+
+  document.getElementById("statusChips").classList.toggle("hidden", !(tab==="Детская"||tab==="Взрослая"||tab==="Женская"));
 }
 
 function checkPin(){
@@ -494,24 +598,32 @@ function checkPin(){
   } else alert("Неверный PIN");
 }
 
+document.addEventListener("change",(e)=>{
+  if(e.target && e.target.id==="monthSelect"){
+    monthIndex=Number(e.target.value);
+    render();
+  }
+});
+
+/* RENDER */
 function render(){
   updateHeader();
-
   const list=document.getElementById("list");
-  list.className="students-grid";
   list.innerHTML="";
 
-  if(tab==="Оплата"){
-    renderPaymentTiles();
-    return;
-  }
+  if(tab==="Оплата"){ renderPaymentTiles(); return; }
+  if(tab==="Затраты"){ renderExpenses(); return; }
 
-  const arr=students.filter(s=>s.group===tab);
+  let arr=students.filter(s=>s.group===tab);
+  if(groupFilter==="paid") arr = arr.filter(s=>monthStatusValue(s,monthIndex)>0);
+  if(groupFilter==="noshow") arr = arr.filter(s=>monthStatusValue(s,monthIndex)===-1);
+  if(groupFilter==="unpaid") arr = arr.filter(s=>monthStatusValue(s,monthIndex)===0);
+
   if(arr.length===0){
     const empty=document.createElement("div");
     empty.className="card";
     empty.style.gridColumn="1 / -1";
-    empty.innerHTML=`<div class="small">Пока пусто. Нажмите “＋” чтобы добавить.</div>`;
+    empty.innerHTML=`<div class="small">Нет учеников по фильтру. Нажмите “＋” чтобы добавить.</div>`;
     list.appendChild(empty);
     return;
   }
@@ -549,6 +661,7 @@ function render(){
   });
 }
 
+/* PAYMENT TAB */
 function renderPaymentTiles(){
   const list=document.getElementById("list");
 
@@ -566,7 +679,7 @@ function renderPaymentTiles(){
   list.appendChild(head);
 
   const monthSel=head.querySelector("#payMonthTop");
-  monthSel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===monthIndex?"selected":""}>${m}</option>`).join("");
+  fillMonthSelect(monthSel, monthIndex);
   monthSel.onchange=()=>{ monthIndex=Number(monthSel.value); render(); };
 
   const gbar=document.createElement("div");
@@ -585,13 +698,7 @@ function renderPaymentTiles(){
   const pgAdult=gbar.querySelector("#pgAdult");
   const pgWomen=gbar.querySelector("#pgWomen");
 
-  function setPayGroup(g){
-    payGroup=g;
-    pgKids.classList.toggle("active", g==="Детская");
-    pgAdult.classList.toggle("active", g==="Взрослая");
-    pgWomen.classList.toggle("active", g==="Женская");
-    render();
-  }
+  function setPayGroup(g){ payGroup=g; render(); }
   pgKids.onclick=()=>setPayGroup("Детская");
   pgAdult.onclick=()=>setPayGroup("Взрослая");
   pgWomen.onclick=()=>setPayGroup("Женская");
@@ -602,13 +709,12 @@ function renderPaymentTiles(){
 
   const groupList=students.filter(s=>s.group===payGroup);
 
-  let sumGroup=0, sumAll=0;
-  students.forEach(s=>{ const v=monthStatusValue(s,monthIndex); if(v>0) sumAll+=v; });
-  groupList.forEach(s=>{ const v=monthStatusValue(s,monthIndex); if(v>0) sumGroup+=v; });
-
   const paid=groupList.filter(s=>monthStatusValue(s,monthIndex)>0);
   const notCame=groupList.filter(s=>monthStatusValue(s,monthIndex)===-1);
   const notPaid=groupList.filter(s=>monthStatusValue(s,monthIndex)===0);
+
+  const sumGroup=incomeForMonth(monthIndex, payGroup);
+  const sumAll=incomeForMonth(monthIndex);
 
   const kpi=document.createElement("div");
   kpi.className="grid-header";
@@ -623,11 +729,11 @@ function renderPaymentTiles(){
   `;
   list.appendChild(kpi);
 
-  addPaymentSection("Оплатили", "green", paid);
-  addPaymentSection("Не ходили", "yellow", notCame);
-  addPaymentSection("Не оплатили", "red", notPaid);
+  addSection("Оплатили", "green", paid);
+  addSection("Не ходили", "yellow", notCame);
+  addSection("Не оплатили", "red", notPaid);
 
-  function addPaymentSection(title,color,arr){
+  function addSection(title,color,arr){
     const h=document.createElement("div");
     h.className="grid-header";
     h.innerHTML=`
@@ -679,8 +785,71 @@ function renderPaymentTiles(){
   }
 }
 
+/* EXPENSES TAB */
+function renderExpenses(){
+  const list=document.getElementById("list");
+
+  const income = incomeForMonth(monthIndex);
+  const exp = expensesForMonth(monthIndex);
+  const net = income - exp;
+
+  const summary=document.createElement("div");
+  summary.className="grid-header";
+  summary.innerHTML=`
+    <div class="left" style="text-transform:none;">
+      <span class="small">
+        Доход: <b style="color:var(--gold)">${income} ₽</b> •
+        Расходы: <b style="color:var(--warn)">${exp} ₽</b> •
+        Итог: <b style="color:${net>=0?'var(--ok)':'var(--danger)'}">${net} ₽</b>
+      </span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn primary" style="width:auto" onclick="openExpense()">＋ Расход</button>
+    </div>
+  `;
+  list.appendChild(summary);
+
+  const expList = expenses
+    .filter(e=>Number(e.month)===monthIndex)
+    .sort((a,b)=>(b.ts||0)-(a.ts||0));
+
+  if(expList.length===0){
+    const empty=document.createElement("div");
+    empty.className="card";
+    empty.style.gridColumn="1 / -1";
+    empty.innerHTML=`<div class="small">Расходов за ${MONTHS[monthIndex]} нет. Нажмите “＋ Расход”.</div>`;
+    list.appendChild(empty);
+    return;
+  }
+
+  expList.forEach(e=>{
+    const tile=document.createElement("div");
+    tile.className="tile";
+    tile.onclick=()=>openExpense(e.id);
+
+    tile.innerHTML=`
+      <div>
+        <div class="tile-top">
+          <div class="tile-name">${esc(e.category || "Расход")}</div>
+          <div class="dots" title="Расход"><span class="dot yellow active"></span></div>
+        </div>
+        <div class="tile-sub">
+          <span class="pill2 gold">− ${Number(e.amount||0)} ₽</span>
+          <span class="pill2">${esc(e.note||"")}</span>
+        </div>
+      </div>
+      <div class="tile-actions">
+        <button class="btn edit mini" onclick="event.stopPropagation(); openExpense('${e.id}')">Ред.</button>
+        <button class="btn danger mini" onclick="event.stopPropagation(); deleteExpense('${e.id}')">Удал.</button>
+      </div>
+    `;
+    list.appendChild(tile);
+  });
+}
+
+/* STUDENT ADD */
 function openAdd(){
-  const group = (tab==="Оплата") ? payGroup : tab;
+  const group = (tab==="Оплата") ? payGroup : (tab==="Затраты" ? "Детская" : tab);
   modalAdd.dataset.addGroup=group;
   document.getElementById("addGroupLabel").textContent=group;
 
@@ -698,6 +867,7 @@ function openAdd(){
     nameLabel.textContent="ФИО спортсмена";
     nameInput.placeholder="ФИО спортсмена";
   }
+
   document.getElementById("modalAdd").classList.remove("hidden");
 }
 function closeAdd(){ document.getElementById("modalAdd").classList.add("hidden"); }
@@ -725,6 +895,7 @@ function saveNewStudent(){
   render();
 }
 
+/* INFO */
 function openInfo(id){
   const i=findIndexById(id); if(i===-1) return;
   const s=students[i];
@@ -756,9 +927,7 @@ function openInfo(id){
 }
 function closeInfo(){ document.getElementById("modalInfo").classList.add("hidden"); }
 
-function fillMonthSelect(sel, selected){
-  sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
-}
+/* PAY MODAL */
 function openPay(id){
   payId=id;
   const i=findIndexById(id); if(i===-1) return;
@@ -804,6 +973,7 @@ function applyPay(){
 }
 function closePay(){ document.getElementById("modalPay").classList.add("hidden"); payId=null; }
 
+/* EDIT */
 document.getElementById("editGroup").addEventListener("change", ()=>{
   const g=document.getElementById("editGroup").value;
   const box=document.getElementById("editParentBox");
@@ -857,6 +1027,7 @@ function closeEdit(){
   editId=null;
 }
 
+/* DELETE student */
 function openDelete(id){
   delId=id;
   const i=findIndexById(id); if(i===-1) return;
@@ -872,9 +1043,67 @@ function confirmDelete(){
 }
 function closeDelete(){ document.getElementById("modalDelete").classList.add("hidden"); delId=null; }
 
-function closeAll(){ ["modalAdd","modalInfo","modalPay","modalEdit","modalDelete"].forEach(id=>document.getElementById(id).classList.add("hidden")); }
+/* EXPENSE MODAL */
+function openExpense(id=null){
+  expEditId=id;
+  fillMonthSelect(document.getElementById("expMonth"), monthIndex);
+  document.getElementById("expMonth").value=String(monthIndex);
 
+  if(id){
+    const idx=findExpenseIndex(id); if(idx===-1) return;
+    const e=expenses[idx];
+    document.getElementById("expSub").innerHTML = `Редактирование • <b>${MONTHS[Number(e.month)]}</b>`;
+    document.getElementById("expMonth").value=String(e.month);
+    document.getElementById("expAmount").value=String(e.amount||"");
+    document.getElementById("expCategory").value=e.category||"";
+    document.getElementById("expNote").value=e.note||"";
+  } else {
+    document.getElementById("expSub").innerHTML = `Новый расход • <b>${MONTHS[monthIndex]}</b>`;
+    document.getElementById("expAmount").value="";
+    document.getElementById("expCategory").value="";
+    document.getElementById("expNote").value="";
+  }
+
+  document.getElementById("modalExp").classList.remove("hidden");
+}
+function closeExpense(){ document.getElementById("modalExp").classList.add("hidden"); expEditId=null; }
+
+function saveExpense(){
+  const m=Number(document.getElementById("expMonth").value);
+  const amount=Number(document.getElementById("expAmount").value);
+  const category=document.getElementById("expCategory").value.trim();
+  const note=document.getElementById("expNote").value.trim();
+
+  if(!amount || amount<=0) return alert("Введите сумму расхода > 0.");
+  if(!category) return alert("Введите категорию (например: аренда).");
+
+  if(expEditId){
+    const idx=findExpenseIndex(expEditId); if(idx===-1){closeExpense();return;}
+    expenses[idx] = {...expenses[idx], month:m, amount, category, note, ts:Date.now()};
+  } else {
+    expenses.push({id:uid(), month:m, amount, category, note, ts:Date.now()});
+  }
+  saveExpenses();
+  monthIndex=m;
+  closeExpense();
+  render();
+}
+
+function deleteExpense(id){
+  if(!confirm("Удалить расход?")) return;
+  const idx=findExpenseIndex(id); if(idx===-1) return;
+  expenses.splice(idx,1);
+  saveExpenses();
+  render();
+}
+
+function closeAll(){
+  ["modalAdd","modalInfo","modalPay","modalEdit","modalDelete","modalExp"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+}
+
+/* init */
 setTab("Детская");
+setGroupFilter("all");
 closeAll();
 
 if("serviceWorker" in navigator){
