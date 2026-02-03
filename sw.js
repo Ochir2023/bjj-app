@@ -1,10 +1,10 @@
-const CACHE_NAME = "bjj-pwa-v10";
+const CACHE_NAME = "bjj-pwa-light-v11";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./sw.js",
-  "./assets/bg-bjj.webp",
+  "./assets/tatami.webp",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-192-maskable.png",
