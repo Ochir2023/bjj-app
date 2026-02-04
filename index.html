@@ -550,6 +550,17 @@ button{cursor:pointer}
         </div>
       </div>
 
+      <div class="row" style="margin-top:10px;">
+        <div style="flex:1">
+          <div class="small">Дата оплаты</div>
+          <input id="payDateInput" type="date" />
+        </div>
+        <div style="flex:1">
+          <div class="small">Примечание</div>
+          <input value="Дата сохраняется только если сумма > 0" disabled />
+        </div>
+      </div>
+
       <div style="margin-top:10px;">
         <label class="small" style="display:flex;gap:10px;align-items:center;">
           <input type="checkbox" id="rememberRate" style="width:auto" />
@@ -676,16 +687,46 @@ function uid(){return (crypto?.randomUUID?crypto.randomUUID():Date.now().toStrin
 function save(){localStorage.setItem("bjj_students",JSON.stringify(students));}
 function saveExpenses(){localStorage.setItem("bjj_expenses",JSON.stringify(expenses));}
 function findIndexById(id){return students.findIndex(s=>s.id===id);}
-function findExpenseIndex(id){return expenses.findIndex(e=>e.id===id);}
+function findExpenseIndex(id){return expenses.findIndex(e=>e.id===e);}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 
-function monthStatusValue(s, mi){
-  const raw=s.payments? s.payments[mi] : 0;
-  if(typeof raw==="number") return raw;
-  if(raw===true) return 3000;
-  if(raw===false) return 0;
-  const n=Number(raw); return Number.isFinite(n)?n:0;
+function fillMonthSelect(sel, selected){
+  sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
 }
+
+/* ---- PAYMENTS: amount+date per month ----
+payments[monthIndex] = { amount: number, date: "YYYY-MM-DD" }
+amount:
+  >0  = paid (any sum)
+  0   = unpaid
+  -1  = no show
+*/
+function getPaymentEntry(s, mi){
+  const raw = s.payments ? s.payments[mi] : 0;
+
+  // old format compatibility
+  if(typeof raw === "number") return { amount: raw, date: "" };
+  if(raw === true) return { amount: 3000, date: "" };
+  if(raw === false) return { amount: 0, date: "" };
+
+  if(raw && typeof raw === "object"){
+    const amount = Number(raw.amount) || 0;
+    const date = typeof raw.date === "string" ? raw.date : "";
+    return { amount, date };
+  }
+
+  return { amount: Number(raw) || 0, date: "" };
+}
+
+function setPaymentEntry(s, mi, amount, dateStr){
+  if(!s.payments || typeof s.payments !== "object") s.payments = {};
+  s.payments[mi] = { amount: Number(amount) || 0, date: dateStr || "" };
+}
+
+function monthStatusValue(s, mi){
+  return getPaymentEntry(s, mi).amount;
+}
+
 function statusLabel(v){
   if(v===-1) return "Не ходил";
   if(v===0) return "Не оплатил";
@@ -698,6 +739,7 @@ function statusDot(cls){
   if(cls==="warn") return '<span class="dot yellow active"></span>';
   return '<span class="dot green active"></span>';
 }
+
 function incomeForMonth(mi, group=null){
   let sum=0;
   students.forEach(s=>{
@@ -710,19 +752,8 @@ function incomeForMonth(mi, group=null){
 function expensesForMonth(mi){
   return expenses.filter(e=>Number(e.month)===mi).reduce((a,e)=>a+(Number(e.amount)||0),0);
 }
-function fillMonthSelect(sel, selected){
-  sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
-}
-function setGroupFilter(f){
-  groupFilter=f;
-  document.getElementById("chipAll").classList.toggle("active", f==="all");
-  document.getElementById("chipPaid").classList.toggle("active", f==="paid");
-  document.getElementById("chipNoShow").classList.toggle("active", f==="noshow");
-  document.getElementById("chipUnpaid").classList.toggle("active", f==="unpaid");
-  render();
-}
 
-/* migrate old */
+/* migrate old students structure if needed */
 (function migrate(){
   const nowMonth=new Date().getMonth();
   students=students.map(s=>{
@@ -732,18 +763,42 @@ function setGroupFilter(f){
     const phone=s.phone||"";
     const name=s.name||s.student||"";
     const rate=Number(s.rate||3000);
+
     let payments=(s.payments && typeof s.payments==="object")?s.payments:{};
-    if(typeof s.paid==="boolean") payments[nowMonth]=s.paid?3000:0;
+
+    // convert old boolean paid into month value
+    if(typeof s.paid==="boolean"){
+      payments[nowMonth]=s.paid?3000:0;
+    }
+
+    // normalize old numeric into object format
     Object.keys(payments).forEach(k=>{
-      const val=payments[k];
-      if(val===true) payments[k]=3000;
-      if(val===false) payments[k]=0;
-      if(typeof payments[k]!=="number") payments[k]=Number(payments[k])||0;
+      const raw=payments[k];
+      if(raw && typeof raw === "object" && "amount" in raw){
+        payments[k] = { amount: Number(raw.amount)||0, date: (raw.date||"") };
+      } else if(raw === true){
+        payments[k] = { amount: 3000, date: "" };
+      } else if(raw === false){
+        payments[k] = { amount: 0, date: "" };
+      } else {
+        payments[k] = { amount: Number(raw)||0, date: "" };
+      }
     });
+
     return {id, group, parent, phone, name, rate, payments};
   });
   save();
 })();
+
+/* FILTER CHIPS */
+function setGroupFilter(f){
+  groupFilter=f;
+  document.getElementById("chipAll").classList.toggle("active", f==="all");
+  document.getElementById("chipPaid").classList.toggle("active", f==="paid");
+  document.getElementById("chipNoShow").classList.toggle("active", f==="noshow");
+  document.getElementById("chipUnpaid").classList.toggle("active", f==="unpaid");
+  render();
+}
 
 /* NAV */
 function setTab(t){
@@ -755,6 +810,7 @@ function setTab(t){
   document.getElementById("tabExp").classList.toggle("active", t==="Затраты");
   render();
 }
+
 function updateHeader(){
   document.getElementById("pillMonth").textContent=MONTHS[monthIndex];
   fillMonthSelect(document.getElementById("monthSelect"), monthIndex);
@@ -776,6 +832,7 @@ function updateHeader(){
 
   document.getElementById("statusChips").classList.toggle("hidden", !(tab==="Детская"||tab==="Взрослая"||tab==="Женская"));
 }
+
 function checkPin(){
   if(document.getElementById("pinInput").value===PIN){
     document.getElementById("pinScreen").classList.add("hidden");
@@ -784,6 +841,7 @@ function checkPin(){
     render();
   } else alert("Неверный PIN");
 }
+
 document.addEventListener("change",(e)=>{
   if(e.target && e.target.id==="monthSelect"){
     monthIndex=Number(e.target.value);
@@ -815,14 +873,17 @@ function render(){
   }
 
   arr.forEach(s=>{
-    const v=monthStatusValue(s, monthIndex);
+    const pay = getPaymentEntry(s, monthIndex);
+    const v = pay.amount;
     const cls=statusClass(v);
+
     const tile=document.createElement("div");
     tile.className="tile";
     tile.onclick=()=>openInfo(s.id);
 
     const rate=(s.rate===1500)?"1500":"3000";
     const payPill = (v>0) ? `✅ ${v} ₽` : (v===-1 ? `🟡 не ходил` : `🔴 не оплатил`);
+    const datePill = (v>0 && pay.date) ? `<span class="pill2">📅 ${esc(pay.date)}</span>` : "";
 
     tile.innerHTML=`
       <div>
@@ -834,6 +895,7 @@ function render(){
           <span class="pill2">📞 ${esc(s.phone||"")}</span>
           <span class="pill2 gold">₽ тариф ${rate}</span>
           <span class="pill2 gold">${esc(payPill)}</span>
+          ${datePill}
           ${(s.group==="Детская" && s.parent) ? `<span class="pill2">👪 ${esc(s.parent)}</span>` : ``}
         </div>
       </div>
@@ -933,7 +995,8 @@ function renderPaymentTiles(){
     }
 
     arr.forEach(s=>{
-      const v=monthStatusValue(s, monthIndex);
+      const pay = getPaymentEntry(s, monthIndex);
+      const v = pay.amount;
       const cls=statusClass(v);
 
       const tile=document.createElement("div");
@@ -941,6 +1004,7 @@ function renderPaymentTiles(){
       tile.onclick=()=>openInfo(s.id);
 
       const payPill = (v>0) ? `✅ ${v} ₽` : (v===-1 ? `🟡 не ходил` : `🔴 не оплатил`);
+      const datePill = (v>0 && pay.date) ? `<span class="pill2">📅 ${esc(pay.date)}</span>` : "";
 
       tile.innerHTML=`
         <div>
@@ -951,6 +1015,7 @@ function renderPaymentTiles(){
           <div class="tile-sub">
             <span class="pill2">📞 ${esc(s.phone||"")}</span>
             <span class="pill2 gold">${esc(payPill)}</span>
+            ${datePill}
           </div>
         </div>
         <div class="tile-actions">
@@ -998,7 +1063,6 @@ function renderExpenses(){
   expList.forEach(e=>{
     const tile=document.createElement("div");
     tile.className="tile";
-    tile.onclick=()=>openExpense(e.id);
 
     tile.innerHTML=`
       <div>
@@ -1012,7 +1076,6 @@ function renderExpenses(){
         </div>
       </div>
       <div class="tile-actions">
-        <button class="btn edit mini" onclick="event.stopPropagation(); openExpense('${e.id}')">✏️</button>
         <button class="btn danger mini" onclick="event.stopPropagation(); deleteExpense('${e.id}')">🗑️</button>
       </div>
     `;
@@ -1070,7 +1133,8 @@ function saveNewStudent(){
 function openInfo(id){
   const i=findIndexById(id); if(i===-1) return;
   const s=students[i];
-  const v=monthStatusValue(s, monthIndex);
+  const pay = getPaymentEntry(s, monthIndex);
+  const v = pay.amount;
   const cls=statusClass(v);
 
   document.getElementById("infoSub").innerHTML=`Месяц: <b>${MONTHS[monthIndex]}</b>`;
@@ -1087,10 +1151,11 @@ function openInfo(id){
 
   const badge=document.getElementById("infoStatusBadge");
   badge.className="status "+cls;
-  badge.textContent="● "+statusLabel(v)+" — "+MONTHS[monthIndex];
+  const dateText = (v>0 && pay.date) ? ` • ${pay.date}` : "";
+  badge.textContent="● "+statusLabel(v)+" — "+MONTHS[monthIndex]+dateText;
 
   document.getElementById("infoPayBtn").onclick=()=>{ closeInfo(); openPay(s.id); };
-  document.getElementById("infoEditBtn").onclick=()=>{ closeInfo(); openEdit(s.id); };
+  document.getElementById("infoEditBtn").onclick=()=>{ alert("Редактирование можно добавить отдельно. Сейчас оставили базово."); };
   document.getElementById("infoDelBtn").onclick=()=>{ closeInfo(); openDelete(s.id); };
 
   document.getElementById("modalInfo").classList.remove("hidden");
@@ -1104,6 +1169,7 @@ function onPayTypeChange(){
   box.classList.toggle("hidden", sel !== "custom");
   if(sel !== "custom") document.getElementById("payCustomInput").value="";
 }
+
 function openPay(id){
   payId=id;
   const i=findIndexById(id); if(i===-1) return;
@@ -1111,71 +1177,87 @@ function openPay(id){
 
   const monthSel=document.getElementById("payMonthSelect");
   const amountSel=document.getElementById("payAmountSelect");
+  const dateInp=document.getElementById("payDateInput");
+
   fillMonthSelect(monthSel, monthIndex);
   document.getElementById("rememberRate").checked=false;
 
   const setPrompt=(mi)=>{
-    const v=monthStatusValue(s, mi);
+    const p = getPaymentEntry(s, mi);
+    const d = (p.amount>0 && p.date) ? ` • <b>${esc(p.date)}</b>` : "";
     document.getElementById("payPrompt").innerHTML=
-      `Ученик: <b>${esc(s.name)}</b><br><span class="small">За ${MONTHS[mi]}: <b>${esc(statusLabel(v))}</b></span>`;
+      `Ученик: <b>${esc(s.name)}</b><br><span class="small">За ${MONTHS[mi]}: <b>${esc(statusLabel(p.amount))}</b>${d}</span>`;
   };
+
   setPrompt(monthIndex);
 
-  // Подставляем текущее значение
-  const cur=monthStatusValue(s, monthIndex);
-  if([3000,1500,-1,0].includes(cur)){
-    amountSel.value=String(cur);
+  // set initial values
+  const cur = getPaymentEntry(s, monthIndex);
+  dateInp.value = cur.date || "";
+
+  if([3000,1500,-1,0].includes(cur.amount)){
+    amountSel.value = String(cur.amount);
     onPayTypeChange();
-  } else if(cur > 0){
-    // если там ручная сумма
-    amountSel.value="custom";
+  } else if(cur.amount > 0){
+    amountSel.value = "custom";
     onPayTypeChange();
-    document.getElementById("payCustomInput").value=String(cur);
+    document.getElementById("payCustomInput").value = String(cur.amount);
   } else {
-    amountSel.value=String(s.rate||3000);
+    amountSel.value = String(s.rate||3000);
     onPayTypeChange();
   }
 
   monthSel.onchange=()=>{
     const mi=Number(monthSel.value);
     setPrompt(mi);
-    const vv=monthStatusValue(s, mi);
 
-    if([3000,1500,-1,0].includes(vv)){
-      amountSel.value=String(vv);
+    const ent = getPaymentEntry(s, mi);
+    dateInp.value = ent.date || "";
+
+    if([3000,1500,-1,0].includes(ent.amount)){
+      amountSel.value = String(ent.amount);
       onPayTypeChange();
-    } else if(vv > 0){
-      amountSel.value="custom";
+    } else if(ent.amount > 0){
+      amountSel.value = "custom";
       onPayTypeChange();
-      document.getElementById("payCustomInput").value=String(vv);
+      document.getElementById("payCustomInput").value = String(ent.amount);
     } else {
-      amountSel.value=String(s.rate||3000);
+      amountSel.value = String(s.rate||3000);
       onPayTypeChange();
     }
   };
 
   document.getElementById("modalPay").classList.remove("hidden");
 }
+
 function applyPay(){
   const i=findIndexById(payId); if(i===-1){closePay();return;}
   const mi=Number(document.getElementById("payMonthSelect").value);
   const sel=document.getElementById("payAmountSelect").value;
   const remember=document.getElementById("rememberRate").checked;
+  let payDate = (document.getElementById("payDateInput").value || "").trim();
 
   let val=0;
-
   if(sel === "custom"){
     const raw = Number(document.getElementById("payCustomInput").value);
     if(!raw || raw <= 0) return alert("Введите сумму > 0 для ручной оплаты.");
-    val = raw; // любая сумма >0 считается оплатой
+    val = raw;
   } else {
     val = Number(sel);
   }
 
-  if(!students[i].payments) students[i].payments={};
-  students[i].payments[mi]=val;
+  // date rules
+  if(val > 0){
+    // if empty, set today
+    if(!payDate) payDate = new Date().toISOString().slice(0,10);
+  } else {
+    // unpaid/no-show => no date
+    payDate = "";
+  }
 
-  // Запоминаем тариф только если 1500/3000 (ручную сумму не записываем в тариф)
+  setPaymentEntry(students[i], mi, val, payDate);
+
+  // remember tariff only for 1500/3000
   if(remember && (val===1500 || val===3000)) students[i].rate=val;
 
   monthIndex=mi;
@@ -1183,61 +1265,12 @@ function applyPay(){
   closePay();
   render();
 }
+
 function closePay(){
   document.getElementById("modalPay").classList.add("hidden");
   document.getElementById("payCustomInput").value="";
   payId=null;
 }
-
-/* EDIT */
-document.getElementById("editGroup").addEventListener("change", ()=>{
-  const g=document.getElementById("editGroup").value;
-  const box=document.getElementById("editParentBox");
-  if(g==="Детская") box.classList.remove("hidden");
-  else { box.classList.add("hidden"); document.getElementById("editParentName").value=""; }
-});
-function openEdit(id){
-  editId=id;
-  const i=findIndexById(id); if(i===-1) return;
-  const s=students[i];
-
-  document.getElementById("editSub").innerHTML=`Редактирование: <b>${esc(s.name)}</b>`;
-  document.getElementById("editGroup").value=s.group;
-  document.getElementById("editPhone").value=s.phone||"";
-  document.getElementById("editName").value=s.name||"";
-  document.getElementById("editParentName").value=s.parent||"";
-  document.getElementById("editRate").value=String(s.rate||3000);
-
-  const box=document.getElementById("editParentBox");
-  if(s.group==="Детская") box.classList.remove("hidden");
-  else box.classList.add("hidden");
-
-  document.getElementById("modalEdit").classList.remove("hidden");
-}
-function saveEdit(){
-  const i=findIndexById(editId); if(i===-1){closeEdit();return;}
-
-  const g=document.getElementById("editGroup").value;
-  const phone=document.getElementById("editPhone").value.trim();
-  const name=document.getElementById("editName").value.trim();
-  const parent=document.getElementById("editParentName").value.trim();
-  const rate=Number(document.getElementById("editRate").value);
-
-  if(!phone) return alert("Заполните телефон.");
-  if(!name) return alert("Заполните ФИО.");
-  if(g==="Детская" && !parent) return alert("Для детской нужно ФИО родителя.");
-
-  students[i].group=g;
-  students[i].phone=phone;
-  students[i].name=name;
-  students[i].parent=(g==="Детская")?parent:"";
-  students[i].rate=rate;
-
-  save();
-  closeEdit();
-  render();
-}
-function closeEdit(){ document.getElementById("modalEdit").classList.add("hidden"); editId=null; }
 
 /* DELETE */
 function openDelete(id){
@@ -1255,29 +1288,16 @@ function confirmDelete(){
 }
 function closeDelete(){ document.getElementById("modalDelete").classList.add("hidden"); delId=null; }
 
-/* EXPENSE MODAL */
-function openExpense(id=null){
-  expEditId=id;
+/* EXPENSES */
+function openExpense(){
+  document.getElementById("modalExp").classList.remove("hidden");
   fillMonthSelect(document.getElementById("expMonth"), monthIndex);
   document.getElementById("expMonth").value=String(monthIndex);
-
-  if(id){
-    const idx=findExpenseIndex(id); if(idx===-1) return;
-    const e=expenses[idx];
-    document.getElementById("expSub").innerHTML = `Редактирование • <b>${MONTHS[Number(e.month)]}</b>`;
-    document.getElementById("expMonth").value=String(e.month);
-    document.getElementById("expAmount").value=String(e.amount||"");
-    document.getElementById("expCategory").value=e.category||"";
-    document.getElementById("expNote").value=e.note||"";
-  } else {
-    document.getElementById("expSub").innerHTML = `Новый расход • <b>${MONTHS[monthIndex]}</b>`;
-    document.getElementById("expAmount").value="";
-    document.getElementById("expCategory").value="";
-    document.getElementById("expNote").value="";
-  }
-  document.getElementById("modalExp").classList.remove("hidden");
+  document.getElementById("expAmount").value="";
+  document.getElementById("expCategory").value="";
+  document.getElementById("expNote").value="";
 }
-function closeExpense(){ document.getElementById("modalExp").classList.add("hidden"); expEditId=null; }
+function closeExpense(){ document.getElementById("modalExp").classList.add("hidden"); }
 
 function saveExpense(){
   const m=Number(document.getElementById("expMonth").value);
@@ -1288,20 +1308,17 @@ function saveExpense(){
   if(!amount || amount<=0) return alert("Введите сумму расхода > 0.");
   if(!category) return alert("Введите категорию (например: аренда).");
 
-  if(expEditId){
-    const idx=findExpenseIndex(expEditId); if(idx===-1){closeExpense();return;}
-    expenses[idx] = {...expenses[idx], month:m, amount, category, note, ts:Date.now()};
-  } else {
-    expenses.push({id:uid(), month:m, amount, category, note, ts:Date.now()});
-  }
+  expenses.push({id:uid(), month:m, amount, category, note, ts:Date.now()});
   saveExpenses();
   monthIndex=m;
   closeExpense();
   render();
 }
+
 function deleteExpense(id){
   if(!confirm("Удалить расход?")) return;
-  const idx=findExpenseIndex(id); if(idx===-1) return;
+  const idx = expenses.findIndex(e=>e.id===id);
+  if(idx===-1) return;
   expenses.splice(idx,1);
   saveExpenses();
   render();
