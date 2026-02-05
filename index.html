@@ -205,19 +205,16 @@ button{cursor:pointer}
 /* ===== Month selector fix ===== */
 .month-bar{
   display:flex;
-  gap:10px;
-  align-items:center;
+  justify-content:flex-end;
   width:100%;
-  min-width:0;
 }
 
 .month-select{
-  flex:1;
-  min-width:0;
-  max-width:140px;      /* ← ключевая строка */
-  padding:8px 10px;
-  border-radius:14px;
+  max-width:140px;
+  padding:8px 12px;
+  border-radius:16px;
 }
+
 
 
 /* HERO */
@@ -481,10 +478,8 @@ button{cursor:pointer}
       <div class="hero-inner">
         <div>
           <h1 id="heroTitle">Детская группа</h1>
-          <div class="meta" id="heroMeta">Тап по плитке → подробности</div>
-        </div>
+          
        <div class="month-bar">
-  <div class="pill">Месяц: <span id="pillMonth"></span></div>
   <select id="monthSelect" class="month-select"></select>
 </div>
 
