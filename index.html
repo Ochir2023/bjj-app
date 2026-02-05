@@ -202,6 +202,22 @@ button{cursor:pointer}
   border-color:rgba(211,180,90,.65);
   background:linear-gradient(135deg, rgba(211,180,90,.32), rgba(255,255,255,.94));
 }
+/* ===== Month selector fix ===== */
+.month-bar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  width:100%;
+  min-width:0;
+}
+
+.month-select{
+  flex:1;
+  min-width:0;
+  max-width:140px;      /* ← ключевая строка */
+  padding:8px 10px;
+  border-radius:14px;
+}
 
 
 /* HERO */
@@ -467,11 +483,11 @@ button{cursor:pointer}
           <h1 id="heroTitle">Детская группа</h1>
           <div class="meta" id="heroMeta">Тап по плитке → подробности</div>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <div class="pill">Месяц: <span id="pillMonth"></span></div>
-          <div style="width:160px; max-width:42vw;">
-            <select id="monthSelect"></select>
-          </div>
+       <div class="month-bar">
+  <div class="pill">Месяц: <span id="pillMonth"></span></div>
+  <select id="monthSelect" class="month-select"></select>
+</div>
+
         </div>
       </div>
 
