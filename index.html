@@ -202,7 +202,7 @@ button{cursor:pointer}
   border-color:rgba(211,180,90,.65);
   background:linear-gradient(135deg, rgba(211,180,90,.32), rgba(255,255,255,.94));
 }
-/* ===== Month selector fix ===== */
+/* ===== Month selector (final clean version) ===== */
 .month-bar{
   display:flex;
   justify-content:flex-end;
@@ -211,9 +211,14 @@ button{cursor:pointer}
 
 .month-select{
   max-width:140px;
+  width:100%;
   padding:8px 12px;
   border-radius:16px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.94);
+  font-size:14px;
 }
+
 
 
 
@@ -225,12 +230,10 @@ button{cursor:pointer}
   background:rgba(255,255,255,.92);
   box-shadow:var(--shadow);
 }
-.hero-inner{
-  padding:16px 16px 12px;
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  align-items:flex-end
+<div class="month-bar">
+  <select id="monthSelect" class="month-select"></select>
+</div>
+
 }
 .hero h1{margin:0;font-size:18px;letter-spacing:.3px;text-transform:uppercase}
 .hero .meta{margin-top:6px;font-size:12px;color:var(--muted)}
