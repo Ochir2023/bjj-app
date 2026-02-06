@@ -22,6 +22,12 @@
   --danger:#E74C3C;
 
   --accent:#D3B45A;
+
+  --btn-bg: rgba(255,255,255,.92);
+  --btn-line: rgba(16,24,40,.14);
+  --btn-shadow: 0 10px 18px rgba(16,24,40,.10);
+  --btn-shadow-press: 0 6px 12px rgba(16,24,40,.12);
+  --btn-inset: inset 0 1px 0 rgba(255,255,255,.85);
 }
 
 *{box-sizing:border-box}
@@ -49,84 +55,6 @@ input,select,button{
 }
 input::placeholder{color:rgba(102,112,133,.85)}
 button{cursor:pointer}
-}
-/* ===== Tatami Soft Buttons (Variant A) ===== */
-
-:root{
-  --btn-bg: rgba(255,255,255,.92);
-  --btn-line: rgba(16,24,40,.14);
-  --btn-shadow: 0 10px 18px rgba(16,24,40,.10);
-  --btn-shadow-press: 0 6px 12px rgba(16,24,40,.12);
-  --btn-inset: inset 0 1px 0 rgba(255,255,255,.85);
-}
-
-.btn{
-  border-radius: 16px;
-  padding: 10px 12px;
-  border: 1px solid var(--btn-line);
-  background: var(--btn-bg);
-  color: var(--text);
-  box-shadow: var(--btn-shadow), var(--btn-inset);
-  transition: transform .10s ease, box-shadow .12s ease, filter .12s ease, border-color .12s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.btn:hover{ filter: brightness(1.02); }
-.btn:active{
-  transform: translateY(1px) scale(.99);
-  box-shadow: var(--btn-shadow-press), var(--btn-inset);
-}
-.btn:focus-visible{
-  outline: none;
-  border-color: rgba(211,180,90,.75);
-  box-shadow: 0 0 0 4px rgba(211,180,90,.18), var(--btn-shadow);
-}
-
-.btn.primary{
-  border-color: rgba(211,180,90,.55);
-  background: linear-gradient(135deg, rgba(211,180,90,.40), rgba(255,255,255,.96));
-}
-
-.btn.edit{
-  border-color: rgba(59,130,246,.32);
-  background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(255,255,255,.96));
-}
-
-.btn.danger{
-  border-color: rgba(231,76,60,.30);
-  background: linear-gradient(135deg, rgba(231,76,60,.14), rgba(255,255,255,.96));
-}
-
-.tile-actions .mini{
-  width:auto;
-  padding: 8px 10px;
-  border-radius: 14px;
-  font-size: 12px;
-}
-
-.icon-btn{
-  border: 1px solid rgba(211,180,90,.55);
-  background: linear-gradient(135deg, rgba(211,180,90,.45), rgba(255,255,255,.98));
-  color: var(--text);
-  border-radius: 18px;
-  padding: 8px 12px;
-  min-width: 46px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  box-shadow: 0 12px 18px rgba(211,180,90,.18), inset 0 1px 0 rgba(255,255,255,.85);
-  transition: transform .10s ease, box-shadow .12s ease, filter .12s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.icon-btn:hover{ filter: brightness(1.02); }
-.icon-btn:active{
-  transform: translateY(1px) scale(.99);
-  box-shadow: 0 8px 14px rgba(211,180,90,.22), inset 0 1px 0 rgba(255,255,255,.85);
-}
-.icon-btn span{font-size:20px;line-height:1}
-
-.row{display:flex;gap:10px;margin-top:10px}
-.row .btn{flex:1}
 
 .small{font-size:12px;color:var(--muted)}
 .badge{
@@ -146,6 +74,43 @@ button{cursor:pointer}
   box-shadow:var(--shadow2);
   padding:12px;
 }
+
+/* ===== Tatami Soft Buttons (A) ===== */
+.btn{
+  border-radius: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--btn-line);
+  background: var(--btn-bg);
+  color: var(--text);
+  box-shadow: var(--btn-shadow), var(--btn-inset);
+  transition: transform .10s ease, box-shadow .12s ease, filter .12s ease, border-color .12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:hover{ filter: brightness(1.02); }
+.btn:active{
+  transform: translateY(1px) scale(.99);
+  box-shadow: var(--btn-shadow-press), var(--btn-inset);
+}
+.btn:focus-visible{
+  outline: none;
+  border-color: rgba(211,180,90,.75);
+  box-shadow: 0 0 0 4px rgba(211,180,90,.18), var(--btn-shadow);
+}
+.btn.primary{
+  border-color: rgba(211,180,90,.55);
+  background: linear-gradient(135deg, rgba(211,180,90,.40), rgba(255,255,255,.96));
+}
+.btn.edit{
+  border-color: rgba(59,130,246,.32);
+  background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(255,255,255,.96));
+}
+.btn.danger{
+  border-color: rgba(231,76,60,.30);
+  background: linear-gradient(135deg, rgba(231,76,60,.14), rgba(255,255,255,.96));
+}
+
+.row{display:flex;gap:10px;margin-top:10px}
+.row .btn{flex:1}
 
 /* PIN */
 #pinScreen{
@@ -202,25 +167,26 @@ button{cursor:pointer}
   border-color:rgba(211,180,90,.65);
   background:linear-gradient(135deg, rgba(211,180,90,.32), rgba(255,255,255,.94));
 }
-/* ===== Month selector (final clean version) ===== */
-.month-bar{
+.icon-btn{
+  border: 1px solid rgba(211,180,90,.55);
+  background: linear-gradient(135deg, rgba(211,180,90,.45), rgba(255,255,255,.98));
+  color: var(--text);
+  border-radius: 18px;
+  padding: 8px 12px;
+  min-width: 46px;
   display:flex;
-  justify-content:flex-end;
-  width:100%;
+  justify-content:center;
+  align-items:center;
+  box-shadow: 0 12px 18px rgba(211,180,90,.18), inset 0 1px 0 rgba(255,255,255,.85);
+  transition: transform .10s ease, box-shadow .12s ease, filter .12s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-
-.month-select{
-  max-width:140px;
-  width:100%;
-  padding:8px 12px;
-  border-radius:16px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.94);
-  font-size:14px;
+.icon-btn:hover{ filter: brightness(1.02); }
+.icon-btn:active{
+  transform: translateY(1px) scale(.99);
+  box-shadow: 0 8px 14px rgba(211,180,90,.22), inset 0 1px 0 rgba(255,255,255,.85);
 }
-
-
-
+.icon-btn span{font-size:20px;line-height:1}
 
 /* HERO */
 .hero{
@@ -230,25 +196,37 @@ button{cursor:pointer}
   background:rgba(255,255,255,.92);
   box-shadow:var(--shadow);
 }
-<div class="month-bar">
-  <select id="monthSelect" class="month-select"></select>
-</div>
-
+.hero-inner{
+  padding:16px 16px 12px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-end;
 }
 .hero h1{margin:0;font-size:18px;letter-spacing:.3px;text-transform:uppercase}
-.hero .meta{margin-top:6px;font-size:12px;color:var(--muted)}
-.hero .pill{
-  font-size:12px;
-  border:1px solid rgba(211,180,90,.45);
-  color:rgba(31,41,55,.92);
-  background:rgba(211,180,90,.20);
-  padding:6px 10px;
-  border-radius:999px;
-  white-space:nowrap
+
+/* Month selector clean + not overflow */
+.month-bar{
+  display:flex;
+  justify-content:flex-end;
+  width:100%;
+  min-width:0;
 }
+.month-select{
+  max-width:140px;
+  width:100%;
+  min-width:0;
+  padding:8px 12px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.94);
+  font-size:14px;
+}
+
+/* legend + chips */
 .hero-controls{
   display:flex;gap:10px;flex-wrap:wrap;align-items:center;
-  padding:0 14px 14px
+  padding:0 14px 14px;
 }
 .legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px}
 .legend span{display:inline-flex;gap:6px;align-items:center}
@@ -279,7 +257,7 @@ button{cursor:pointer}
   display:grid;
   grid-template-columns:repeat(2, minmax(0, 1fr));
   gap:10px;
-  margin-top:12px
+  margin-top:12px;
 }
 @media (max-width: 299px){ .students-grid{grid-template-columns:1fr} }
 
@@ -294,7 +272,7 @@ button{cursor:pointer}
   min-height:118px;
   display:flex;
   flex-direction:column;
-  justify-content:space-between
+  justify-content:space-between;
 }
 .tile-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .tile-name{
@@ -313,7 +291,7 @@ button{cursor:pointer}
   display:flex;
   gap:6px;
   flex-wrap:wrap;
-  align-items:center
+  align-items:center;
 }
 .pill2{
   font-size:11px;
@@ -324,11 +302,11 @@ button{cursor:pointer}
   max-width:100%;
   overflow:hidden;
   text-overflow:ellipsis;
-  white-space:nowrap
+  white-space:nowrap;
 }
 .pill2.gold{
   border-color:rgba(211,180,90,.40);
-  background:rgba(211,180,90,.18)
+  background:rgba(211,180,90,.18);
 }
 
 .dots{display:flex;gap:6px;align-items:center}
@@ -345,9 +323,9 @@ button{cursor:pointer}
 .tile-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .tile-actions .mini{
   width:auto;
-  padding:8px 10px;
-  border-radius:12px;
-  font-size:12px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  font-size: 12px;
 }
 
 /* GRID HEADERS */
@@ -362,6 +340,7 @@ button{cursor:pointer}
   align-items:center;
   justify-content:space-between;
   gap:10px;
+consider: 
 }
 .grid-header .left{
   display:flex;
@@ -386,7 +365,7 @@ button{cursor:pointer}
   background:rgba(16,24,40,.35);
   display:flex;align-items:center;justify-content:center;
   padding:18px;
-  z-index:50
+  z-index:50;
 }
 .modal-card{
   width:100%;
@@ -395,7 +374,7 @@ button{cursor:pointer}
   border:1px solid var(--line);
   background:rgba(255,255,255,.97);
   box-shadow:var(--shadow);
-  padding:16px
+  padding:16px;
 }
 .kv{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .kv .label{color:var(--muted);font-size:12px}
@@ -403,7 +382,7 @@ button{cursor:pointer}
   display:inline-flex;align-items:center;gap:6px;
   font-size:12px;margin-top:8px;padding:6px 10px;
   border-radius:999px;border:1px solid var(--line);
-  background:rgba(246,247,249,.92)
+  background:rgba(246,247,249,.92);
 }
 .status.ok{border-color:rgba(46,204,113,.35);color:#1F7A45}
 .status.bad{border-color:rgba(231,76,60,.35);color:#A83A2D}
@@ -481,11 +460,10 @@ button{cursor:pointer}
       <div class="hero-inner">
         <div>
           <h1 id="heroTitle">Детская группа</h1>
-          
-       <div class="month-bar">
-  <select id="monthSelect" class="month-select"></select>
-</div>
-
+          <!-- Серый текст убран намеренно -->
+        </div>
+        <div class="month-bar">
+          <select id="monthSelect" class="month-select"></select>
         </div>
       </div>
 
@@ -696,7 +674,6 @@ button{cursor:pointer}
   <div id="modalExp" class="modal hidden">
     <div class="modal-card">
       <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Расход</h3>
-      <div class="small" id="expSub"></div>
 
       <div class="row">
         <div style="flex:1">
@@ -740,51 +717,33 @@ let students=JSON.parse(localStorage.getItem("bjj_students"))||[];
 let expenses=JSON.parse(localStorage.getItem("bjj_expenses"))||[];
 
 let payId=null, delId=null, editId=null;
-let expEditId=null;
 
 function uid(){return (crypto?.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));}
 function save(){localStorage.setItem("bjj_students",JSON.stringify(students));}
 function saveExpenses(){localStorage.setItem("bjj_expenses",JSON.stringify(expenses));}
 function findIndexById(id){return students.findIndex(s=>s.id===id);}
-function findExpenseIndex(id){return expenses.findIndex(e=>e.id===e);}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 
 function fillMonthSelect(sel, selected){
   sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
 }
 
-/* ---- PAYMENTS: amount+date per month ----
-payments[monthIndex] = { amount: number, date: "YYYY-MM-DD" }
-amount:
-  >0  = paid (any sum)
-  0   = unpaid
-  -1  = no show
-*/
+/* payments[mi] = { amount, date } */
 function getPaymentEntry(s, mi){
   const raw = s.payments ? s.payments[mi] : 0;
-
-  // old format compatibility
   if(typeof raw === "number") return { amount: raw, date: "" };
   if(raw === true) return { amount: 3000, date: "" };
   if(raw === false) return { amount: 0, date: "" };
-
   if(raw && typeof raw === "object"){
-    const amount = Number(raw.amount) || 0;
-    const date = typeof raw.date === "string" ? raw.date : "";
-    return { amount, date };
+    return { amount: Number(raw.amount)||0, date: typeof raw.date==="string" ? raw.date : "" };
   }
-
-  return { amount: Number(raw) || 0, date: "" };
+  return { amount: Number(raw)||0, date: "" };
 }
-
 function setPaymentEntry(s, mi, amount, dateStr){
   if(!s.payments || typeof s.payments !== "object") s.payments = {};
-  s.payments[mi] = { amount: Number(amount) || 0, date: dateStr || "" };
+  s.payments[mi] = { amount: Number(amount)||0, date: dateStr||"" };
 }
-
-function monthStatusValue(s, mi){
-  return getPaymentEntry(s, mi).amount;
-}
+function monthStatusValue(s, mi){ return getPaymentEntry(s, mi).amount; }
 
 function statusLabel(v){
   if(v===-1) return "Не ходил";
@@ -812,7 +771,7 @@ function expensesForMonth(mi){
   return expenses.filter(e=>Number(e.month)===mi).reduce((a,e)=>a+(Number(e.amount)||0),0);
 }
 
-/* migrate old students structure if needed */
+/* migrate */
 (function migrate(){
   const nowMonth=new Date().getMonth();
   students=students.map(s=>{
@@ -822,15 +781,12 @@ function expensesForMonth(mi){
     const phone=s.phone||"";
     const name=s.name||s.student||"";
     const rate=Number(s.rate||3000);
-
     let payments=(s.payments && typeof s.payments==="object")?s.payments:{};
 
-    // convert old boolean paid into month value
     if(typeof s.paid==="boolean"){
       payments[nowMonth]=s.paid?3000:0;
     }
 
-    // normalize old numeric into object format
     Object.keys(payments).forEach(k=>{
       const raw=payments[k];
       if(raw && typeof raw === "object" && "amount" in raw){
@@ -849,7 +805,7 @@ function expensesForMonth(mi){
   save();
 })();
 
-/* FILTER CHIPS */
+/* tabs + chips */
 function setGroupFilter(f){
   groupFilter=f;
   document.getElementById("chipAll").classList.toggle("active", f==="all");
@@ -859,7 +815,6 @@ function setGroupFilter(f){
   render();
 }
 
-/* NAV */
 function setTab(t){
   tab=t;
   document.getElementById("tabKids").classList.toggle("active", t==="Детская");
@@ -871,9 +826,6 @@ function setTab(t){
 }
 
 function updateHeader(){
-  document.getElementById("pillMonth").textContent=MONTHS[monthIndex];
-  fillMonthSelect(document.getElementById("monthSelect"), monthIndex);
-
   document.getElementById("topHint").textContent =
     (tab==="Оплата") ? `Оплата • ${MONTHS[monthIndex]}` :
     (tab==="Затраты") ? `Затраты • ${MONTHS[monthIndex]}` :
@@ -884,12 +836,10 @@ function updateHeader(){
     (tab==="Затраты") ? "Затраты" :
     `${tab} группа`;
 
-  document.getElementById("heroMeta").textContent =
-    (tab==="Оплата") ? "Сортировка: оплатили → не ходили → не оплатили" :
-    (tab==="Затраты") ? "Расходы и прибыль за выбранный месяц" :
-    "Выберите месяц и фильтр • Тап по плитке → подробности";
-
   document.getElementById("statusChips").classList.toggle("hidden", !(tab==="Детская"||tab==="Взрослая"||tab==="Женская"));
+
+  const ms=document.getElementById("monthSelect");
+  fillMonthSelect(ms, monthIndex);
 }
 
 function checkPin(){
@@ -901,6 +851,7 @@ function checkPin(){
   } else alert("Неверный PIN");
 }
 
+/* month change */
 document.addEventListener("change",(e)=>{
   if(e.target && e.target.id==="monthSelect"){
     monthIndex=Number(e.target.value);
@@ -908,7 +859,7 @@ document.addEventListener("change",(e)=>{
   }
 });
 
-/* RENDER */
+/* render main */
 function render(){
   updateHeader();
   const list=document.getElementById("list");
@@ -968,7 +919,7 @@ function render(){
   });
 }
 
-/* PAYMENT TAB */
+/* payment tab */
 function renderPaymentTiles(){
   const list=document.getElementById("list");
 
@@ -1088,7 +1039,7 @@ function renderPaymentTiles(){
   }
 }
 
-/* EXPENSES */
+/* expenses tab */
 function renderExpenses(){
   const list=document.getElementById("list");
 
@@ -1114,7 +1065,7 @@ function renderExpenses(){
     const empty=document.createElement("div");
     empty.className="card";
     empty.style.gridColumn="1 / -1";
-    empty.innerHTML=`<div class="small">Расходов за ${MONTHS[monthIndex]} нет. Нажмите “＋ Расход”.</div>`;
+    empty.innerHTML=`<div class="small">Расходов за ${MONTHS[monthIndex]} нет.</div>`;
     list.appendChild(empty);
     return;
   }
@@ -1122,12 +1073,11 @@ function renderExpenses(){
   expList.forEach(e=>{
     const tile=document.createElement("div");
     tile.className="tile";
-
     tile.innerHTML=`
       <div>
         <div class="tile-top">
           <div class="tile-name">${esc(e.category || "Расход")}</div>
-          <div class="dots" title="Расход"><span class="dot yellow active"></span></div>
+          <div class="dots"><span class="dot yellow active"></span></div>
         </div>
         <div class="tile-sub">
           <span class="pill2 gold">− ${Number(e.amount||0)} ₽</span>
@@ -1142,7 +1092,7 @@ function renderExpenses(){
   });
 }
 
-/* ADD MODAL */
+/* ADD */
 function openAdd(){
   const group = (tab==="Оплата") ? payGroup : (tab==="Затраты" ? "Детская" : tab);
   modalAdd.dataset.addGroup=group;
@@ -1192,8 +1142,8 @@ function saveNewStudent(){
 function openInfo(id){
   const i=findIndexById(id); if(i===-1) return;
   const s=students[i];
-  const pay = getPaymentEntry(s, monthIndex);
-  const v = pay.amount;
+  const pay=getPaymentEntry(s, monthIndex);
+  const v=pay.amount;
   const cls=statusClass(v);
 
   document.getElementById("infoSub").innerHTML=`Месяц: <b>${MONTHS[monthIndex]}</b>`;
@@ -1211,10 +1161,10 @@ function openInfo(id){
   const badge=document.getElementById("infoStatusBadge");
   badge.className="status "+cls;
   const dateText = (v>0 && pay.date) ? ` • ${pay.date}` : "";
-  badge.textContent="● "+statusLabel(v)+" — "+MONTHS[monthIndex]+dateText;
+  badge.textContent="● "+statusLabel(v)+dateText;
 
   document.getElementById("infoPayBtn").onclick=()=>{ closeInfo(); openPay(s.id); };
-  document.getElementById("infoEditBtn").onclick=()=>{ alert("Редактирование можно добавить отдельно. Сейчас оставили базово."); };
+  document.getElementById("infoEditBtn").onclick=()=>{ closeInfo(); openEdit(s.id); };
   document.getElementById("infoDelBtn").onclick=()=>{ closeInfo(); openDelete(s.id); };
 
   document.getElementById("modalInfo").classList.remove("hidden");
@@ -1223,12 +1173,10 @@ function closeInfo(){ document.getElementById("modalInfo").classList.add("hidden
 
 /* PAY */
 function onPayTypeChange(){
-  const sel = document.getElementById("payAmountSelect").value;
-  const box = document.getElementById("customPayBox");
-  box.classList.toggle("hidden", sel !== "custom");
-  if(sel !== "custom") document.getElementById("payCustomInput").value="";
+  const sel=document.getElementById("payAmountSelect").value;
+  document.getElementById("customPayBox").classList.toggle("hidden", sel!=="custom");
+  if(sel!=="custom") document.getElementById("payCustomInput").value="";
 }
-
 function openPay(id){
   payId=id;
   const i=findIndexById(id); if(i===-1) return;
@@ -1242,81 +1190,74 @@ function openPay(id){
   document.getElementById("rememberRate").checked=false;
 
   const setPrompt=(mi)=>{
-    const p = getPaymentEntry(s, mi);
-    const d = (p.amount>0 && p.date) ? ` • <b>${esc(p.date)}</b>` : "";
+    const p=getPaymentEntry(s, mi);
+    const d=(p.amount>0 && p.date)?` • <b>${esc(p.date)}</b>`:"";
     document.getElementById("payPrompt").innerHTML=
       `Ученик: <b>${esc(s.name)}</b><br><span class="small">За ${MONTHS[mi]}: <b>${esc(statusLabel(p.amount))}</b>${d}</span>`;
   };
 
   setPrompt(monthIndex);
 
-  // set initial values
-  const cur = getPaymentEntry(s, monthIndex);
-  dateInp.value = cur.date || "";
+  const cur=getPaymentEntry(s, monthIndex);
+  dateInp.value=cur.date||"";
 
   if([3000,1500,-1,0].includes(cur.amount)){
-    amountSel.value = String(cur.amount);
+    amountSel.value=String(cur.amount);
     onPayTypeChange();
-  } else if(cur.amount > 0){
-    amountSel.value = "custom";
+  } else if(cur.amount>0){
+    amountSel.value="custom";
     onPayTypeChange();
-    document.getElementById("payCustomInput").value = String(cur.amount);
+    document.getElementById("payCustomInput").value=String(cur.amount);
   } else {
-    amountSel.value = String(s.rate||3000);
+    amountSel.value=String(s.rate||3000);
     onPayTypeChange();
   }
 
   monthSel.onchange=()=>{
     const mi=Number(monthSel.value);
     setPrompt(mi);
-
-    const ent = getPaymentEntry(s, mi);
-    dateInp.value = ent.date || "";
+    const ent=getPaymentEntry(s, mi);
+    dateInp.value=ent.date||"";
 
     if([3000,1500,-1,0].includes(ent.amount)){
-      amountSel.value = String(ent.amount);
+      amountSel.value=String(ent.amount);
       onPayTypeChange();
-    } else if(ent.amount > 0){
-      amountSel.value = "custom";
+    } else if(ent.amount>0){
+      amountSel.value="custom";
       onPayTypeChange();
-      document.getElementById("payCustomInput").value = String(ent.amount);
+      document.getElementById("payCustomInput").value=String(ent.amount);
     } else {
-      amountSel.value = String(s.rate||3000);
+      amountSel.value=String(s.rate||3000);
       onPayTypeChange();
     }
   };
 
   document.getElementById("modalPay").classList.remove("hidden");
 }
-
 function applyPay(){
   const i=findIndexById(payId); if(i===-1){closePay();return;}
   const mi=Number(document.getElementById("payMonthSelect").value);
   const sel=document.getElementById("payAmountSelect").value;
   const remember=document.getElementById("rememberRate").checked;
-  let payDate = (document.getElementById("payDateInput").value || "").trim();
+  let payDate=(document.getElementById("payDateInput").value||"").trim();
 
   let val=0;
-  if(sel === "custom"){
-    const raw = Number(document.getElementById("payCustomInput").value);
-    if(!raw || raw <= 0) return alert("Введите сумму > 0 для ручной оплаты.");
-    val = raw;
+  if(sel==="custom"){
+    const raw=Number(document.getElementById("payCustomInput").value);
+    if(!raw || raw<=0) return alert("Введите сумму > 0 для ручной оплаты.");
+    val=raw;
   } else {
-    val = Number(sel);
+    val=Number(sel);
   }
 
-  // date rules
-  if(val > 0){
-    // if empty, set today
-    if(!payDate) payDate = new Date().toISOString().slice(0,10);
+  if(val>0){
+    if(!payDate) payDate=new Date().toISOString().slice(0,10);
   } else {
-    // unpaid/no-show => no date
-    payDate = "";
+    payDate="";
   }
 
   setPaymentEntry(students[i], mi, val, payDate);
 
-  // remember tariff only for 1500/3000
   if(remember && (val===1500 || val===3000)) students[i].rate=val;
 
   monthIndex=mi;
@@ -1324,11 +1265,63 @@ function applyPay(){
   closePay();
   render();
 }
-
 function closePay(){
   document.getElementById("modalPay").classList.add("hidden");
   document.getElementById("payCustomInput").value="";
   payId=null;
+}
+
+/* EDIT */
+document.getElementById("editGroup").addEventListener("change", ()=>{
+  const g=document.getElementById("editGroup").value;
+  const box=document.getElementById("editParentBox");
+  if(g==="Детская") box.classList.remove("hidden");
+  else { box.classList.add("hidden"); document.getElementById("editParentName").value=""; }
+});
+function openEdit(id){
+  editId=id;
+  const i=findIndexById(id); if(i===-1) return;
+  const s=students[i];
+
+  document.getElementById("editSub").innerHTML=`Редактирование: <b>${esc(s.name)}</b>`;
+  document.getElementById("editGroup").value=s.group;
+  document.getElementById("editPhone").value=s.phone||"";
+  document.getElementById("editName").value=s.name||"";
+  document.getElementById("editParentName").value=s.parent||"";
+  document.getElementById("editRate").value=String(s.rate||3000);
+
+  const box=document.getElementById("editParentBox");
+  if(s.group==="Детская") box.classList.remove("hidden");
+  else box.classList.add("hidden");
+
+  document.getElementById("modalEdit").classList.remove("hidden");
+}
+function saveEdit(){
+  const i=findIndexById(editId); if(i===-1){closeEdit();return;}
+
+  const g=document.getElementById("editGroup").value;
+  const phone=document.getElementById("editPhone").value.trim();
+  const name=document.getElementById("editName").value.trim();
+  const parent=document.getElementById("editParentName").value.trim();
+  const rate=Number(document.getElementById("editRate").value);
+
+  if(!phone) return alert("Заполните телефон.");
+  if(!name) return alert("Заполните ФИО.");
+  if(g==="Детская" && !parent) return alert("Для детской нужно ФИО родителя.");
+
+  students[i].group=g;
+  students[i].phone=phone;
+  students[i].name=name;
+  students[i].parent=(g==="Детская")?parent:"";
+  students[i].rate=rate;
+
+  save();
+  closeEdit();
+  render();
+}
+function closeEdit(){
+  document.getElementById("modalEdit").classList.add("hidden");
+  editId=null;
 }
 
 /* DELETE */
@@ -1347,7 +1340,7 @@ function confirmDelete(){
 }
 function closeDelete(){ document.getElementById("modalDelete").classList.add("hidden"); delId=null; }
 
-/* EXPENSES */
+/* EXPENSE */
 function openExpense(){
   document.getElementById("modalExp").classList.remove("hidden");
   fillMonthSelect(document.getElementById("expMonth"), monthIndex);
@@ -1357,7 +1350,6 @@ function openExpense(){
   document.getElementById("expNote").value="";
 }
 function closeExpense(){ document.getElementById("modalExp").classList.add("hidden"); }
-
 function saveExpense(){
   const m=Number(document.getElementById("expMonth").value);
   const amount=Number(document.getElementById("expAmount").value);
@@ -1373,10 +1365,9 @@ function saveExpense(){
   closeExpense();
   render();
 }
-
 function deleteExpense(id){
   if(!confirm("Удалить расход?")) return;
-  const idx = expenses.findIndex(e=>e.id===id);
+  const idx=expenses.findIndex(e=>e.id===id);
   if(idx===-1) return;
   expenses.splice(idx,1);
   saveExpenses();
@@ -1384,7 +1375,8 @@ function deleteExpense(id){
 }
 
 function closeAll(){
-  ["modalAdd","modalInfo","modalPay","modalEdit","modalDelete","modalExp"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+  ["modalAdd","modalInfo","modalPay","modalEdit","modalDelete","modalExp"]
+    .forEach(id=>document.getElementById(id).classList.add("hidden"));
 }
 
 /* INIT */
