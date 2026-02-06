@@ -1039,7 +1039,6 @@ function renderPaymentTiles(){
   }
 }
 
-/* expenses tab */
 function renderExpenses(){
   const list=document.getElementById("list");
 
@@ -1060,7 +1059,10 @@ function renderExpenses(){
   `;
   list.appendChild(summary);
 
-  const expList = expenses.filter(e=>Number(e.month)===monthIndex).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  // Берём расходы только выбранного месяца
+  const expList = expenses
+    .filter(e=>Number(e.month)===monthIndex);
+
   if(expList.length===0){
     const empty=document.createElement("div");
     empty.className="card";
@@ -1070,22 +1072,40 @@ function renderExpenses(){
     return;
   }
 
+  // ===== ГРУППИРОВКА по категории (одинаковые статьи суммируем) =====
+  // Ключ = category (в нижнем регистре, без лишних пробелов)
+  const groups = {};
   expList.forEach(e=>{
+    const catRaw = (e.category || "Другое").trim();
+    const key = catRaw.toLowerCase();
+    if(!groups[key]){
+      groups[key] = { title: catRaw, total: 0, count: 0 };
+    }
+    groups[key].total += Number(e.amount||0);
+    groups[key].count += 1;
+  });
+
+  // Превращаем в массив и сортируем по сумме (по убыванию)
+  const groupedArr = Object.values(groups).sort((a,b)=>b.total-a.total);
+
+  // Рендерим компактными плитками
+  groupedArr.forEach(g=>{
     const tile=document.createElement("div");
     tile.className="tile";
+
     tile.innerHTML=`
       <div>
         <div class="tile-top">
-          <div class="tile-name">${esc(e.category || "Расход")}</div>
+          <div class="tile-name">${esc(g.title)}</div>
           <div class="dots"><span class="dot yellow active"></span></div>
         </div>
         <div class="tile-sub">
-          <span class="pill2 gold">− ${Number(e.amount||0)} ₽</span>
-          <span class="pill2">${esc(e.note||"")}</span>
+          <span class="pill2 gold">− ${g.total} ₽</span>
+          <span class="pill2">${g.count} запис.</span>
         </div>
       </div>
       <div class="tile-actions">
-        <button class="btn danger mini" onclick="event.stopPropagation(); deleteExpense('${e.id}')">🗑️</button>
+        <button class="btn edit mini" onclick="event.stopPropagation(); alert('Пока сводка. Если надо — добавлю просмотр/удаление отдельных записей.')">ℹ️</button>
       </div>
     `;
     list.appendChild(tile);
