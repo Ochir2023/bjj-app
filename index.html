@@ -106,6 +106,13 @@ button{cursor:pointer}
   border-color: rgba(231,76,60,.30);
   background: linear-gradient(135deg, rgba(231,76,60,.14), rgba(255,255,255,.96));
 }
+.btn.mini{
+  width:auto;
+  padding:8px 10px;
+  border-radius:14px;
+  font-size:12px;
+  box-shadow: var(--shadow2), var(--btn-inset);
+}
 
 .row{display:flex;gap:10px;margin-top:10px}
 .row .btn{flex:1}
@@ -250,7 +257,7 @@ button{cursor:pointer}
 }
 @media (max-width: 299px){ .students-grid{grid-template-columns:1fr} }
 
-/* ===== Ultra compact TILE with initials ===== */
+/* ===== Ultra compact iOS tile ===== */
 .tile{
   border:1px solid var(--line);
   border-radius:var(--r);
@@ -263,7 +270,10 @@ button{cursor:pointer}
   align-items:center;
   justify-content:space-between;
   gap:10px;
+  -webkit-tap-highlight-color: transparent;
+  user-select:none;
 }
+.tile:active{ transform: translateY(1px); }
 
 .tile-left{
   display:flex;
@@ -293,7 +303,12 @@ button{cursor:pointer}
   min-width:0;
   max-width:100%;
 }
-
+.tile-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
 .dot{
   width:14px;height:14px;border-radius:50%;
   border:1px solid rgba(16,24,40,.10);
@@ -303,6 +318,12 @@ button{cursor:pointer}
 .dot.red{background:var(--danger)}
 .dot.yellow{background:var(--warn)}
 .dot.green{background:var(--ok)}
+.chev{
+  font-size:18px;
+  line-height:1;
+  color:rgba(102,112,133,.9);
+  margin-top:-1px;
+}
 
 /* GRID HEADERS */
 .grid-header{
@@ -376,6 +397,58 @@ button{cursor:pointer}
   border-color: rgba(211,180,90,.65);
   background: linear-gradient(135deg, rgba(211,180,90,.28), rgba(255,255,255,.94));
 }
+
+/* ===== iOS Action Sheet ===== */
+.sheet{
+  position:fixed; inset:0;
+  background:rgba(16,24,40,.35);
+  display:flex; align-items:flex-end; justify-content:center;
+  padding:14px;
+  z-index:60;
+}
+.sheet-card{
+  width:100%;
+  max-width:560px;
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow: var(--shadow);
+}
+.sheet-group{
+  background:rgba(255,255,255,.97);
+  border:1px solid var(--line);
+  border-radius:22px;
+  overflow:hidden;
+}
+.sheet-title{
+  padding:12px 14px;
+  text-align:center;
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+  color:var(--muted);
+}
+.sheet-btn{
+  width:100%;
+  border:0;
+  border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.97);
+  padding:14px 14px;
+  font-size:16px;
+  font-weight:700;
+}
+.sheet-btn:last-child{ border-bottom:0; }
+.sheet-btn.primary{ color:#1F7A45; }
+.sheet-btn.edit{ color:#1E5AD7; }
+.sheet-btn.danger{ color:#A83A2D; }
+.sheet-cancel-wrap{ margin-top:10px; }
+.sheet-cancel{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:rgba(255,255,255,.97);
+  padding:14px 14px;
+  font-size:16px;
+  font-weight:800;
+}
 </style>
 </head>
 
@@ -386,7 +459,7 @@ button{cursor:pointer}
       <div class="logo"></div>
       <div>
         <b>BJJ • УЧЁТ</b>
-        <span>Ультра-компакт • Инициалы + статус</span>
+        <span>iOS-плитки • удержание → меню</span>
       </div>
     </div>
 
@@ -674,6 +747,35 @@ button{cursor:pointer}
       </div>
     </div>
   </div>
+
+  <!-- EXPENSE DETAILS -->
+  <div id="modalExpDetails" class="modal hidden">
+    <div class="modal-card">
+      <h3 style="margin:0;text-transform:uppercase;font-size:14px;">Расходы</h3>
+      <div class="small" id="expDetailsTitle"></div>
+
+      <div id="expDetailsList" style="margin-top:12px;"></div>
+
+      <div class="row" style="margin-top:12px;">
+        <button class="btn" onclick="closeExpenseDetails()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- iOS Action Sheet -->
+  <div id="actionSheet" class="sheet hidden" onclick="sheetBackdrop(event)">
+    <div class="sheet-card">
+      <div class="sheet-group">
+        <div class="sheet-title" id="sheetTitle">Действия</div>
+        <button class="sheet-btn primary" onclick="sheetDoPay()">Статус / Оплата</button>
+        <button class="sheet-btn edit" onclick="sheetDoEdit()">Редактировать</button>
+        <button class="sheet-btn danger" onclick="sheetDoDelete()">Удалить</button>
+      </div>
+      <div class="sheet-cancel-wrap">
+        <button class="sheet-cancel" onclick="closeSheet()">Отмена</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -690,6 +792,7 @@ let students=JSON.parse(localStorage.getItem("bjj_students"))||[];
 let expenses=JSON.parse(localStorage.getItem("bjj_expenses"))||[];
 
 let payId=null, delId=null, editId=null;
+let sheetId=null;
 
 function uid(){return (crypto?.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));}
 function save(){localStorage.setItem("bjj_students",JSON.stringify(students));}
@@ -841,8 +944,58 @@ document.addEventListener("change",(e)=>{
   }
 });
 
-/* ===== Ultra compact tile renderer ===== */
-function renderCompactTiles(arr){
+/* ===== iOS long-press on tile ===== */
+function attachLongPress(el, id){
+  let timer=null;
+  let fired=false;
+  let startX=0, startY=0;
+  const HOLD_MS=450;
+  const MOVE_TOL=10;
+
+  function clear(){
+    if(timer){ clearTimeout(timer); timer=null; }
+  }
+
+  function onStart(ev){
+    fired=false;
+    const p = ev.touches ? ev.touches[0] : ev;
+    startX=p.clientX; startY=p.clientY;
+
+    clear();
+    timer=setTimeout(()=>{
+      fired=true;
+      openSheet(id);
+    }, HOLD_MS);
+  }
+
+  function onMove(ev){
+    if(!timer) return;
+    const p = ev.touches ? ev.touches[0] : ev;
+    const dx=Math.abs(p.clientX-startX);
+    const dy=Math.abs(p.clientY-startY);
+    if(dx>MOVE_TOL || dy>MOVE_TOL) clear();
+  }
+
+  function onEnd(){ clear(); }
+
+  el.addEventListener("touchstart", onStart, {passive:true});
+  el.addEventListener("touchmove", onMove, {passive:true});
+  el.addEventListener("touchend", onEnd);
+  el.addEventListener("touchcancel", onEnd);
+
+  el.addEventListener("mousedown", onStart);
+  el.addEventListener("mousemove", onMove);
+  el.addEventListener("mouseup", onEnd);
+  el.addEventListener("mouseleave", onEnd);
+
+  el.addEventListener("click",(e)=>{
+    if(fired){ e.preventDefault(); e.stopPropagation(); return; }
+    openInfo(id);
+  });
+}
+
+/* ===== render tiles (students) ===== */
+function renderStudentTiles(arr){
   const list=document.getElementById("list");
   if(arr.length===0){
     const empty=document.createElement("div");
@@ -855,19 +1008,22 @@ function renderCompactTiles(arr){
 
   arr.forEach(s=>{
     const v = monthStatusValue(s, monthIndex);
-    const dotCls = statusDotClass(v); // red/yellow/green
+    const dotCls = statusDotClass(v);
     const ini = initials(s.name);
 
     const tile=document.createElement("div");
     tile.className="tile";
-    tile.onclick=()=>openInfo(s.id);
     tile.innerHTML=`
       <div class="tile-left">
         <div class="avatar">${esc(ini)}</div>
         <div class="tile-name">${esc(s.name)}</div>
       </div>
-      <span class="dot ${dotCls}" title="${esc(statusLabel(v))}"></span>
+      <div class="tile-right">
+        <span class="dot ${dotCls}" title="${esc(statusLabel(v))}"></span>
+        <span class="chev">›</span>
+      </div>
     `;
+    attachLongPress(tile, s.id);
     list.appendChild(tile);
   });
 }
@@ -887,10 +1043,10 @@ function render(){
   if(groupFilter==="noshow") arr = arr.filter(s=>monthStatusValue(s,monthIndex)===-1);
   if(groupFilter==="unpaid") arr = arr.filter(s=>monthStatusValue(s,monthIndex)===0);
 
-  renderCompactTiles(arr);
+  renderStudentTiles(arr);
 }
 
-/* payment tab: compact tiles + sections */
+/* payment tab: student tiles by sections */
 function renderPaymentTiles(){
   const list=document.getElementById("list");
 
@@ -964,12 +1120,11 @@ function renderPaymentTiles(){
       <div class="count">${arr.length} чел.</div>
     `;
     list.appendChild(h);
-
-    renderCompactTiles(arr);
+    renderStudentTiles(arr);
   }
 }
 
-/* expenses: grouped (summary tiles) */
+/* ===== Expenses (categories tiles) ===== */
 function renderExpenses(){
   const list=document.getElementById("list");
 
@@ -991,6 +1146,7 @@ function renderExpenses(){
   list.appendChild(summary);
 
   const expList = expenses.filter(e=>Number(e.month)===monthIndex);
+
   if(expList.length===0){
     const empty=document.createElement("div");
     empty.className="card";
@@ -1004,25 +1160,77 @@ function renderExpenses(){
   expList.forEach(e=>{
     const title = (e.category || "Другое").trim();
     const key = title.toLowerCase();
-    if(!groups[key]) groups[key] = { title, total: 0, count: 0 };
+    if(!groups[key]) groups[key] = { title, total: 0 };
     groups[key].total += Number(e.amount||0);
-    groups[key].count += 1;
   });
 
-  const groupedArr = Object.values(groups).sort((a,b)=>b.total-a.total);
+  Object.entries(groups)
+    .sort((a,b)=>b[1].total-a[1].total)
+    .forEach(([key, g])=>{
+      const tile=document.createElement("div");
+      tile.className="tile";
+      tile.innerHTML=`
+        <div class="tile-left">
+          <div class="avatar">₽</div>
+          <div class="tile-name">${esc(g.title)} — ${g.total} ₽</div>
+        </div>
+        <div class="tile-right">
+          <span class="chev">›</span>
+        </div>
+      `;
+      tile.onclick=()=>openExpenseDetails(key, g.title);
+      list.appendChild(tile);
+    });
+}
 
-  groupedArr.forEach(g=>{
-    const tile=document.createElement("div");
-    tile.className="tile";
-    tile.innerHTML=`
-      <div class="tile-left">
-        <div class="avatar">₽</div>
-        <div class="tile-name">${esc(g.title)} — ${g.total} ₽</div>
-      </div>
-      <span class="dot yellow" title="${g.count} запис."></span>
-    `;
-    list.appendChild(tile);
-  });
+/* ===== Expense details modal ===== */
+function openExpenseDetails(key, title){
+  const list=document.getElementById("expDetailsList");
+  list.innerHTML="";
+
+  document.getElementById("expDetailsTitle").innerHTML=
+    `Категория: <b>${esc(title)}</b> • ${MONTHS[monthIndex]}`;
+
+  const items = expenses
+    .filter(e=>Number(e.month)===monthIndex)
+    .filter(e=>(e.category||"").trim().toLowerCase()===key)
+    .sort((a,b)=>(b.ts||0)-(a.ts||0));
+
+  if(items.length===0){
+    list.innerHTML=`<div class="small">Нет записей.</div>`;
+  } else {
+    items.forEach(e=>{
+      const row=document.createElement("div");
+      row.className="card";
+      row.style.marginBottom="8px";
+      row.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <div style="min-width:0">
+            <div style="font-weight:900;">${Number(e.amount||0)} ₽</div>
+            <div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${esc(e.note||"Без комментария")}
+            </div>
+          </div>
+          <button class="btn danger mini" onclick="deleteExpense('${e.id}')">Удалить</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById("modalExpDetails").classList.remove("hidden");
+}
+function closeExpenseDetails(){
+  document.getElementById("modalExpDetails").classList.add("hidden");
+}
+function deleteExpense(id){
+  const index = expenses.findIndex(e=>e.id===id);
+  if(index===-1) return;
+  expenses.splice(index,1);
+  saveExpenses();
+  // остаёмся в деталях — просто перерисуем список
+  closeExpenseDetails();
+  render();
 }
 
 /* ADD */
@@ -1296,9 +1504,41 @@ function saveExpense(){
   render();
 }
 
+/* ===== Action Sheet ===== */
+function openSheet(id){
+  sheetId=id;
+  const i=findIndexById(id);
+  const title = (i!==-1) ? `Действия: ${students[i].name}` : "Действия";
+  document.getElementById("sheetTitle").textContent = title;
+  document.getElementById("actionSheet").classList.remove("hidden");
+}
+function closeSheet(){
+  document.getElementById("actionSheet").classList.add("hidden");
+  sheetId=null;
+}
+function sheetBackdrop(e){
+  if(e.target && e.target.id==="actionSheet") closeSheet();
+}
+function sheetDoPay(){
+  const id=sheetId;
+  closeSheet();
+  openPay(id);
+}
+function sheetDoEdit(){
+  const id=sheetId;
+  closeSheet();
+  openEdit(id);
+}
+function sheetDoDelete(){
+  const id=sheetId;
+  closeSheet();
+  openDelete(id);
+}
+
 function closeAll(){
-  ["modalAdd","modalInfo","modalPay","modalEdit","modalDelete","modalExp"]
+  ["modalAdd","modalInfo","modalPay","modalEdit","modalDelete","modalExp","modalExpDetails"]
     .forEach(id=>document.getElementById(id).classList.add("hidden"));
+  closeSheet();
 }
 
 /* INIT */
