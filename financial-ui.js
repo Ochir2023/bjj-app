@@ -303,7 +303,7 @@ async function applyPay() {
       !financialEditPaymentId &&
       rememberedStudent &&
       document.getElementById("rememberRate").checked &&
-      [150000, 300000].includes(amountCents)
+      [150000, 200000, 250000, 300000].includes(amountCents)
     )
       rememberedStudent.rateCents = amountCents;
     const ok = await financialAction((f) => {
