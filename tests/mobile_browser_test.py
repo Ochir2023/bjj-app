@@ -58,7 +58,7 @@ class MobileBrowserTests(unittest.TestCase):
         self.page.evaluate('navigate("home")')
         self.page.get_by_role('button',name='Проверить поступления').click()
         content=self.page.locator('#financialModal').inner_text()
-        self.assertIn('4 000',content)
+        self.assertIn('4000',content.replace(' ', '').replace('\u00a0', '').replace('\u202f', ''))
         self.assertIn('Возможный повтор',content)
         self.assertIn('Открыть историю ученика',content)
 
