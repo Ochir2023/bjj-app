@@ -46,6 +46,22 @@ class MobileBrowserTests(unittest.TestCase):
         self.page.keyboard.press('Escape');self.page.get_by_role('button',name='Добавить расход',exact=True).click()
         self.assertTrue(self.page.locator('#modalExp').is_visible())
 
+    def test_reconciliation_shows_each_payment_and_possible_duplicate(self):
+        self.login(); self.add()
+        self.page.evaluate("""async () => {
+          const id = students[0].id;
+          await financialAction(f => {
+            Ledger.addPayment(f, {studentId:id, period:'2026-11',date:'2026-11-05',amountCents:200000});
+            Ledger.addPayment(f, {studentId:id, period:'2026-11',date:'2026-11-05',amountCents:200000});
+          });
+        }""")
+        self.page.evaluate('navigate("home")')
+        self.page.get_by_role('button',name='Проверить поступления').click()
+        content=self.page.locator('#financialModal').inner_text()
+        self.assertIn('4000',content.replace(' ', '').replace('\u00a0', '').replace('\u202f', ''))
+        self.assertIn('Возможный повтор',content)
+        self.assertIn('Открыть историю ученика',content)
+
     def test_drawer_background_escape_swipe_and_focus(self):
         self.login();self.page.click('#menuButton')
         self.assertTrue(self.page.evaluate('drawerOpen'))

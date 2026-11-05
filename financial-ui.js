@@ -328,6 +328,23 @@ async function applyPay() {
       confirm(
         `У ученика тариф ${rubles(currentStudent.rateCents)}, но за ${p} ранее начислено ${rubles(oldCharge.amountCents)}. Исправить начисление на ${rubles(currentStudent.rateCents)}? Изменение сохранится в журнале.`,
       );
+    if (!financialEditPaymentId && operation === "payment" && amountCents > 0) {
+      const matching = finance.payments.filter((entry) =>
+        !entry.voided && entry.type === "payment" && entry.studentId === studentId &&
+        entry.period === p && entry.date === when && entry.amountCents === amountCents,
+      );
+      const previousBalance = Ledger.balance(finance, studentId, p);
+      if (
+        matching.length &&
+        !confirm("Такой платёж уже записан: " + rubles(amountCents) +
+          ", " + when + ". Добавить ещё один отдельный платёж? Отмена сохранит прежние данные.")
+      ) return;
+      if (
+        !matching.length && previousBalance.charged > 0 && previousBalance.fullyPaid &&
+        !confirm("За этот месяц ученик уже оплатил начисление. Вы уверены, что получили ещё " +
+          rubles(amountCents) + "? Это увеличит поступления и переплату.")
+      ) return;
+    }
     const ok = await financialAction((f) => {
       if (alignCharge) {
         Ledger.correctCharge(
@@ -478,6 +495,56 @@ function openStudentHistory(studentId) {
   if (legacyCount)
     actionButton(content, `Старые записи без года: ${legacyCount}`, openLegacy);
   actionButton(content, "История изменений", () => openAudit(studentId));
+}
+function openReconciliation() {
+  const period = periodFor(monthIndex);
+  const cashMode = reportBasis === "cash";
+  const rows = finance.payments
+    .filter((p) => !p.voided && (cashMode ? p.date.slice(0, 7) : p.period) === period)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  const total = rows.reduce((sum, p) => sum + Ledger.signed(p), 0);
+  const expected = Ledger.report(finance, period, reportBasis).received;
+  const content = modal("Сверка поступлений: " + period);
+  const intro = document.createElement("p");
+  intro.textContent = (cashMode ? "По дате получения. " : "По периоду назначения. ") +
+    "В учёт попадают все неаннулированные платежи минус возвраты. " +
+    "Проверьте записи, если итог отличается от наличных денег. Тариф сам по себе не подтверждает оплату.";
+  content.appendChild(intro);
+  const summary = document.createElement("p");
+  summary.textContent = "Операций: " + rows.length + " • Сумма: " +
+    rubles(total) + " • Отчёт: " + rubles(expected);
+  content.appendChild(summary);
+  const keys = new Set();
+  let duplicates = 0;
+  rows.forEach((p) => {
+    const key = [p.studentId, p.period, p.date, p.type, p.amountCents].join("|");
+    const possibleDuplicate = keys.has(key);
+    keys.add(key);
+    if (possibleDuplicate) duplicates++;
+    const person = finance.profiles.find((x) => x.studentId === p.studentId);
+    const row = document.createElement("div");
+    row.className = "card";
+    row.textContent = (person?.name || "Ученик из архива") + " • " +
+      (p.type === "refund" ? "Возврат −" : "Поступление +") +
+      rubles(p.amountCents) + " • " + p.date +
+      " • назначено " + p.period +
+      (possibleDuplicate ? " • Возможный повтор!" : "");
+    actionButton(row, "Открыть историю ученика", () => openStudentHistory(p.studentId));
+    content.appendChild(row);
+  });
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "За выбранный период операций нет.";
+    content.appendChild(empty);
+  }
+  if (duplicates) {
+    const note = document.createElement("p");
+    note.textContent = "Внимание: " + duplicates +
+      " возможных повторов (одинаковый ученик, дата, период, сумма). " +
+      "Это могут быть настоящие отдельные взносы — проверяйте перед аннулированием.";
+    content.insertBefore(note, summary.nextSibling);
+  }
 }
 function openArchive() {
   const content = modal("Архив учеников");

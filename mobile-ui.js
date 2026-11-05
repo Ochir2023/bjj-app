@@ -233,6 +233,10 @@ function renderDashboard() {
   metric(grid, "Расходы", rubles(r.expenses));
   metric(grid, "Задолженность", rubles(a.debt), a.debt ? "red" : "");
   metric(grid, "Начислено", rubles(a.charged));
+  const verify = document.createElement("div");
+  verify.className = "utility-actions";
+  button(verify, "Проверить поступления", openReconciliation, "payments", "btn");
+  box.appendChild(verify);
   box.appendChild(grid);
   const note = document.createElement("p");
   note.className = "mode-note";
