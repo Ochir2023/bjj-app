@@ -293,6 +293,18 @@
     }
     return c;
   }
+  function correctCharge(f, studentId, p, amountCents, reason) {
+    assert(period(p), "Нужен период YYYY-MM.");
+    assert(money(amountCents) && amountCents > 0, "Некорректное начисление.");
+    assert(typeof reason === "string" && reason.trim(), "Укажите причину исправления начисления.");
+    const c = f.charges.find((c) => c.studentId === studentId && c.period === p);
+    assert(c, "Начисление за выбранный период не найдено.");
+    if (c.amountCents === amountCents) return c;
+    const before = copy(c);
+    c.amountCents = amountCents;
+    event(f, "charge", "correct", before, c, reason.trim());
+    return c;
+  }
   const signed = (p) => (p.type === "refund" ? -1 : 1) * p.amountCents;
   function balance(f, studentId, p) {
     const charged = sum(
@@ -920,6 +932,7 @@
     validateSource,
     syncStudents,
     ensureCharge,
+    correctCharge,
     addPayment,
     correctPayment,
     setAttendance,
@@ -940,6 +953,7 @@
     "archiveGroup",
     "syncStudents",
     "ensureCharge",
+    "correctCharge",
     "addPayment",
     "correctPayment",
     "setAttendance",
