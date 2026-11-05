@@ -538,3 +538,42 @@ test("legacy archived student name aliases survive repeated saves", () => {
     "Старое имя",
   );
 });
+
+test("confirmed correction 3000 -> 2000 settles a 2000 payment without losing history", () => {
+  const f = fresh();
+  F.ensureCharge(f, "s", "2026-11");
+  F.syncStudents(f, [{ ...student, rate: 2000, rateCents: 200000 }]);
+  assert.equal(F.balance(f, "s", "2026-11").charged, 300000);
+  F.correctCharge(f, "s", "2026-11", 200000, "Тариф исправлен на 2000");
+  F.addPayment(f, {
+    studentId: "s", period: "2026-11", date: "2026-11-05",
+    amountCents: 200000,
+  });
+  const balance = F.balance(f, "s", "2026-11");
+  assert.equal(balance.debt, 0);
+  assert.equal(balance.fullyPaid, true);
+  const history = f.history.find((h) =>
+    h.entity === "charge" && h.action === "correct");
+  assert.equal(history.before.amountCents, 300000);
+  assert.equal(history.after.amountCents, 200000);
+});
+test("charge change without audit is rejected on saving", () => {
+  const { data, loaded } = store();
+  F.ensureCharge(loaded.finance, "s", "2026-11");
+  data.commit(loaded.students, loaded.expenses, loaded.finance);
+  const snapshot = data.snapshot();
+  snapshot.finance.charges[0].amountCents = 200000;
+  assert.throws(() =>
+    data.commit(snapshot.students, snapshot.expenses, snapshot.finance),
+    /начисления/,
+  );
+});
+test("charge correction with audit passes storage validation", () => {
+  const { data, loaded } = store();
+  F.ensureCharge(loaded.finance, "s", "2026-11");
+  data.commit(loaded.students, loaded.expenses, loaded.finance);
+  const snapshot = data.snapshot();
+  F.correctCharge(snapshot.finance, "s", "2026-11", 200000, "Изменился тариф");
+  data.commit(snapshot.students, snapshot.expenses, snapshot.finance);
+  assert.equal(data.snapshot().finance.charges[0].amountCents, 200000);
+});
