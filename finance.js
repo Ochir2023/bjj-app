@@ -209,7 +209,7 @@
       migration: { from: 1, to: 2 },
     };
     ["Детская", "Взрослая", "Женская"].forEach((n) => group(f, n));
-    [1500, 3000].forEach((n) => tariff(f, n));
+    [1500, 2000, 2500, 3000].forEach((n) => tariff(f, n));
     syncStudents(f, state.students, state.archivedStudents || []);
     const sources = [
       ["active", state.students],
