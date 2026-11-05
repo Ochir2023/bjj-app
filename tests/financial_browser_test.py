@@ -135,4 +135,22 @@ class FinancialBrowserTests(unittest.TestCase):
         bounds=self.page.locator('#financialModal .modal-card').evaluate('(e)=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,overflow:getComputedStyle(e).overflowY}}')
         self.assertGreaterEqual(bounds['top'],0);self.assertLessEqual(bounds['bottom'],400);self.assertEqual(bounds['overflow'],'auto')
 
+    def test_changed_tariff_2000_paid_2000_has_no_phantom_debt(self):
+        self.login(); self.add()
+        self.page.evaluate('openEdit(students[0].id)')
+        self.page.select_option('#editRate', '2000')
+        self.page.locator('#modalEdit button:has-text("Сохранить")').click()
+        self.page.wait_for_function('document.getElementById("modalEdit").classList.contains("hidden")')
+        self.assertEqual(self.page.evaluate('students[0].rateCents'), 200000)
+        self.assertEqual(self.page.evaluate('financialStatus(students[0]).charged'), 300000)
+        self.page.evaluate('openPay(students[0].id)')
+        self.assertEqual(self.page.input_value('#payAmountSelect'), '2000')
+        self.page.locator('#modalPay button:has-text("Применить")').click()
+        self.page.wait_for_function('document.getElementById("modalPay").classList.contains("hidden")')
+        self.assertEqual(self.page.evaluate('financialStatus(students[0]).debt'), 0)
+        self.assertTrue(self.page.evaluate('financialStatus(students[0]).fullyPaid'))
+        self.assertEqual(self.page.evaluate('finance.charges[0].amountCents'), 200000)
+        self.assertTrue(any('Исправить начисление' in d for d in self.dialogs))
+        self.assertEqual(self.page.evaluate('finance.history.filter(h=>h.entity==="charge"&&h.action==="correct").length'), 1)
+
 if __name__=='__main__':unittest.main(verbosity=2)

@@ -243,8 +243,23 @@
             if (
               table === "charges" &&
               JSON.stringify(current) !== JSON.stringify(old)
-            )
-              throw Error("Историческое начисление неизменяемо.");
+            ) {
+              // A tariff correction must preserve its before/after states
+              // in the append-only financial history.
+              let recorded = old;
+              for (const entry of next.finance.history.slice(state.finance.history.length)) {
+                if (
+                  entry.entity === "charge" &&
+                  entry.action === "correct" &&
+                  entry.before?.id === old.id &&
+                  typeof entry.reason === "string" &&
+                  entry.reason.trim() &&
+                  JSON.stringify(entry.before) === JSON.stringify(recorded)
+                ) recorded = entry.after;
+              }
+              if (JSON.stringify(recorded) !== JSON.stringify(current))
+                throw Error("Изменение начисления без полной истории запрещено.");
+            }
             if (
               ["payments", "expenses", "attendance"].includes(table) &&
               JSON.stringify(current) !== JSON.stringify(old)
