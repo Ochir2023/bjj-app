@@ -2,455 +2,13 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BJJ — Учёт</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>CoachControl</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icons/app-icon.svg">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#FFFFFF">
-<style>
-:root{
-  --text:#15181F;
-  --muted:#667085;
-  --line:rgba(16,24,40,.12);
-  --shadow:0 10px 24px rgba(16,24,40,.10);
-  --shadow2:0 8px 18px rgba(16,24,40,.08);
-  --r:16px; --r2:22px;
-
-  --ok:#2ECC71;
-  --warn:#F1C40F;
-  --danger:#E74C3C;
-
-  --accent:#D3B45A;
-
-  --btn-bg: rgba(255,255,255,.92);
-  --btn-line: rgba(16,24,40,.14);
-  --btn-shadow: 0 10px 18px rgba(16,24,40,.10);
-  --btn-shadow-press: 0 6px 12px rgba(16,24,40,.12);
-  --btn-inset: inset 0 1px 0 rgba(255,255,255,.85);
-}
-
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  color:var(--text);
-  background:
-    linear-gradient(180deg, rgba(246,247,249,.92), rgba(246,247,249,.90)),
-    url("assets/tatami.webp") center/cover no-repeat fixed;
-}
-.hidden{display:none!important}
-.container{max-width:980px;margin:0 auto;padding:14px}
-
-input,select,button{
-  width:100%;
-  padding:10px 12px;
-  border-radius:14px;
-  border:1px solid var(--line);
-  outline:none;
-  background:rgba(255,255,255,.92);
-  color:var(--text);
-  font-size:14px;
-}
-input::placeholder{color:rgba(102,112,133,.85)}
-button{cursor:pointer}
-
-.small{font-size:12px;color:var(--muted)}
-.badge{
-  font-size:11px;
-  padding:4px 8px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  color:var(--muted);
-  background:rgba(255,255,255,.80);
-  white-space:nowrap;
-}
-
-.card{
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  background:rgba(255,255,255,.92);
-  box-shadow:var(--shadow2);
-  padding:12px;
-}
-
-/* ===== Buttons ===== */
-.btn{
-  border-radius: 16px;
-  padding: 10px 12px;
-  border: 1px solid var(--btn-line);
-  background: var(--btn-bg);
-  color: var(--text);
-  box-shadow: var(--btn-shadow), var(--btn-inset);
-  transition: transform .10s ease, box-shadow .12s ease, filter .12s ease, border-color .12s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn:hover{ filter: brightness(1.02); }
-.btn:active{
-  transform: translateY(1px) scale(.99);
-  box-shadow: var(--btn-shadow-press), var(--btn-inset);
-}
-.btn:focus-visible{
-  outline: none;
-  border-color: rgba(211,180,90,.75);
-  box-shadow: 0 0 0 4px rgba(211,180,90,.18), var(--btn-shadow);
-}
-.btn.primary{
-  border-color: rgba(211,180,90,.55);
-  background: linear-gradient(135deg, rgba(211,180,90,.40), rgba(255,255,255,.96));
-}
-.btn.edit{
-  border-color: rgba(59,130,246,.32);
-  background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(255,255,255,.96));
-}
-.btn.danger{
-  border-color: rgba(231,76,60,.30);
-  background: linear-gradient(135deg, rgba(231,76,60,.14), rgba(255,255,255,.96));
-}
-.btn.mini{
-  width:auto;
-  padding:8px 10px;
-  border-radius:14px;
-  font-size:12px;
-  box-shadow: var(--shadow2), var(--btn-inset);
-}
-
-.row{display:flex;gap:10px;margin-top:10px}
-.row .btn{flex:1}
-
-/* PIN */
-#pinScreen{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px 14px;
-  background:
-    linear-gradient(180deg, rgba(246,247,249,.92), rgba(246,247,249,.94)),
-    url("assets/tatami.webp") center/cover no-repeat;
-}
-.pin-card{
-  width:100%;
-  max-width:420px;
-  border-radius:var(--r2);
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.94);
-  box-shadow:var(--shadow);
-  padding:18px;
-}
-.brand{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.logo{
-  width:38px;height:38px;border-radius:14px;
-  background:linear-gradient(135deg, rgba(211,180,90,.95), rgba(211,180,90,.35));
-  border:1px solid rgba(211,180,90,.55);
-  box-shadow:0 10px 18px rgba(211,180,90,.22);
-}
-.brand b{letter-spacing:.6px;text-transform:uppercase;font-size:13px}
-.brand span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
-
-/* TOPBAR + TABS */
-#appScreen{min-height:100vh}
-.topbar{
-  position:sticky;top:0;z-index:10;
-  background:rgba(246,247,249,.86);
-  backdrop-filter: blur(10px);
-  border-bottom:1px solid var(--line);
-}
-.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px}
-.tabs{display:flex;gap:8px;overflow:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.84);
-  color:var(--text);
-  padding:8px 12px;
-  border-radius:999px;
-  font-size:13px;
-  cursor:pointer;
-  white-space:nowrap;
-}
-.tab.active{
-  border-color:rgba(211,180,90,.65);
-  background:linear-gradient(135deg, rgba(211,180,90,.32), rgba(255,255,255,.94));
-}
-.icon-btn{
-  border: 1px solid rgba(211,180,90,.55);
-  background: linear-gradient(135deg, rgba(211,180,90,.45), rgba(255,255,255,.98));
-  color: var(--text);
-  border-radius: 18px;
-  padding: 8px 12px;
-  min-width: 46px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  box-shadow: 0 12px 18px rgba(211,180,90,.18), inset 0 1px 0 rgba(255,255,255,.85);
-  transition: transform .10s ease, box-shadow .12s ease, filter .12s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.icon-btn:active{ transform: translateY(1px) scale(.99); }
-.icon-btn span{font-size:20px;line-height:1}
-
-/* HERO */
-.hero{
-  margin-top:14px;
-  border:1px solid var(--line);
-  border-radius:var(--r2);
-  background:rgba(255,255,255,.92);
-  box-shadow:var(--shadow);
-}
-.hero-inner{
-  padding:16px 16px 12px;
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  align-items:flex-end;
-}
-.hero h1{margin:0;font-size:18px;letter-spacing:.3px;text-transform:uppercase}
-
-/* Month selector */
-.month-bar{display:flex;justify-content:flex-end;width:100%;min-width:0}
-.month-select{
-  max-width:140px;width:100%;min-width:0;
-  padding:8px 12px;border-radius:16px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.94);
-  font-size:14px;
-}
-
-/* controls + search */
-.hero-controls{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
-  padding:0 14px 14px;
-}
-.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px}
-.legend span{display:inline-flex;gap:6px;align-items:center}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid rgba(16,24,40,.10)}
-.legend i.r{background:var(--danger)}
-.legend i.y{background:var(--warn)}
-.legend i.g{background:var(--ok)}
-
-.search-wrap{flex:1 1 220px;min-width:200px;max-width:420px;margin-left:auto}
-.search{padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.94)}
-
-/* chips */
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{
-  width:auto;border:1px solid var(--line);
-  background:rgba(255,255,255,.86);
-  color:var(--text);
-  padding:7px 10px;border-radius:999px;
-  font-size:12px;cursor:pointer;white-space:nowrap;
-}
-.chip.active{
-  border-color:rgba(211,180,90,.65);
-  background:linear-gradient(135deg, rgba(211,180,90,.28), rgba(255,255,255,.94));
-}
-
-/* GRID 2 columns */
-.students-grid{
-  display:grid;
-  grid-template-columns:repeat(2, minmax(0, 1fr));
-  gap:10px;
-  margin-top:12px;
-}
-@media (max-width: 299px){ .students-grid{grid-template-columns:1fr} }
-
-/* ===== Ultra compact iOS tile ===== */
-.tile{
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  background:rgba(255,255,255,.94);
-  box-shadow:var(--shadow2);
-  padding:8px 10px;
-  cursor:pointer;
-  min-height:52px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  -webkit-tap-highlight-color: transparent;
-  user-select:none;
-}
-.tile:active{ transform: translateY(1px); }
-
-.tile-left{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-width:0;
-}
-.avatar{
-  width:34px;height:34px;border-radius:12px;
-  display:flex;align-items:center;justify-content:center;
-  font-weight:900;
-  font-size:12px;
-  letter-spacing:.5px;
-  text-transform:uppercase;
-  background: linear-gradient(135deg, rgba(211,180,90,.38), rgba(255,255,255,.92));
-  border:1px solid rgba(211,180,90,.50);
-  box-shadow: 0 10px 18px rgba(211,180,90,.15), inset 0 1px 0 rgba(255,255,255,.85);
-  flex:0 0 auto;
-}
-.tile-name{
-  font-size:13px;
-  font-weight:900;
-  line-height:1.1;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  min-width:0;
-  max-width:100%;
-}
-.tile-right{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex:0 0 auto;
-}
-.dot{
-  width:14px;height:14px;border-radius:50%;
-  border:1px solid rgba(16,24,40,.10);
-  box-shadow:0 0 0 3px rgba(16,24,40,.03);
-  flex:0 0 auto;
-}
-.dot.red{background:var(--danger)}
-.dot.yellow{background:var(--warn)}
-.dot.green{background:var(--ok)}
-.chev{
-  font-size:18px;
-  line-height:1;
-  color:rgba(102,112,133,.9);
-  margin-top:-1px;
-}
-
-/* GRID HEADERS */
-.grid-header{
-  grid-column: 1 / -1;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: rgba(255,255,255,.92);
-  box-shadow:var(--shadow2);
-  padding: 10px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-.grid-header .left{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  text-transform:uppercase;
-  letter-spacing:.3px;
-  font-size:12px;
-}
-.grid-header .count{ color: var(--muted); font-size:12px; }
-.grid-dot{
-  width:10px;height:10px;border-radius:50%;
-  border:1px solid rgba(16,24,40,.10);
-}
-.grid-dot.red{ background: var(--danger); }
-.grid-dot.yellow{ background: var(--warn); }
-.grid-dot.green{ background: var(--ok); }
-
-/* MODALS */
-.modal{
-  position:fixed;inset:0;
-  background:rgba(16,24,40,.35);
-  display:flex;align-items:center;justify-content:center;
-  padding:18px;
-  z-index:50;
-}
-.modal-card{
-  width:100%;
-  max-width:560px;
-  border-radius:22px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.97);
-  box-shadow:var(--shadow);
-  padding:16px;
-}
-.kv{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.kv .label{color:var(--muted);font-size:12px}
-.status{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:12px;margin-top:8px;padding:6px 10px;
-  border-radius:999px;border:1px solid var(--line);
-  background:rgba(246,247,249,.92);
-}
-.status.ok{border-color:rgba(46,204,113,.35);color:#1F7A45}
-.status.bad{border-color:rgba(231,76,60,.35);color:#A83A2D}
-.status.warn{border-color:rgba(241,196,15,.45);color:#8D6E00}
-
-/* PAY SUBTABS */
-.pay-subtabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.pay-subtab{
-  width:auto;border:1px solid var(--line);
-  background: rgba(255,255,255,.86);
-  color: var(--text);
-  padding: 7px 10px;border-radius: 999px;
-  font-size: 12px;cursor:pointer;white-space:nowrap;
-}
-.pay-subtab.active{
-  border-color: rgba(211,180,90,.65);
-  background: linear-gradient(135deg, rgba(211,180,90,.28), rgba(255,255,255,.94));
-}
-
-/* ===== iOS Action Sheet ===== */
-.sheet{
-  position:fixed; inset:0;
-  background:rgba(16,24,40,.35);
-  display:flex; align-items:flex-end; justify-content:center;
-  padding:14px;
-  z-index:60;
-}
-.sheet-card{
-  width:100%;
-  max-width:560px;
-  border-radius:22px;
-  overflow:hidden;
-  box-shadow: var(--shadow);
-}
-.sheet-group{
-  background:rgba(255,255,255,.97);
-  border:1px solid var(--line);
-  border-radius:22px;
-  overflow:hidden;
-}
-.sheet-title{
-  padding:12px 14px;
-  text-align:center;
-  border-bottom:1px solid var(--line);
-  font-size:12px;
-  color:var(--muted);
-}
-.sheet-btn{
-  width:100%;
-  border:0;
-  border-bottom:1px solid var(--line);
-  background:rgba(255,255,255,.97);
-  padding:14px 14px;
-  font-size:16px;
-  font-weight:700;
-}
-.sheet-btn:last-child{ border-bottom:0; }
-.sheet-btn.primary{ color:#1F7A45; }
-.sheet-btn.edit{ color:#1E5AD7; }
-.sheet-btn.danger{ color:#A83A2D; }
-.sheet-cancel-wrap{ margin-top:10px; }
-.sheet-cancel{
-  width:100%;
-  border:1px solid var(--line);
-  border-radius:22px;
-  background:rgba(255,255,255,.97);
-  padding:14px 14px;
-  font-size:16px;
-  font-weight:800;
-}
-.modal-card{max-height:calc(100dvh - 36px);overflow-y:auto}
-</style>
+<link rel="stylesheet" href="mobile-ui.css">
 </head>
 
 <body>
@@ -459,8 +17,8 @@ button{cursor:pointer}
     <div class="brand">
       <div class="logo"></div>
       <div>
-        <b>BJJ • УЧЁТ</b>
-        <span>iOS-плитки • удержание → меню</span>
+        <b>CoachControl</b>
+        <span>Меньше рутины. Больше тренерства.</span>
       </div>
     </div>
 
@@ -468,7 +26,7 @@ button{cursor:pointer}
     <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">PIN по умолчанию: <b>1234</b></p>
 
     <div style="margin-top:12px;">
-      <input id="pinInput" type="password" placeholder="Введите PIN" inputmode="numeric" />
+      <input id="pinInput" aria-label="PIN-код" type="password" placeholder="Введите PIN" inputmode="numeric" />
       <div class="row">
         <button class="btn primary" onclick="checkPin()">Войти</button>
       </div>
@@ -477,71 +35,29 @@ button{cursor:pointer}
 </div>
 
 <div id="appScreen" class="hidden">
-  <div class="topbar">
-    <div class="topbar-inner container">
-      <div class="brand" style="margin:0">
-        <div class="logo"></div>
-        <div>
-          <b>BJJ • УЧЁТ</b>
-          <span id="topHint">Группа: Детская</span>
-        </div>
-      </div>
-      <button class="icon-btn" onclick="openAdd()" title="Добавить"><span>＋</span></button>
+  <header class="app-header">
+    <button id="menuButton" class="icon-button hamburger" aria-label="Открыть меню" aria-expanded="false" aria-controls="drawer" onclick="toggleDrawer()"><span></span><span></span><span></span></button>
+    <a class="wordmark" href="#/home" onclick="event.preventDefault();navigate('home')">CoachControl<span class="brand-dot"></span></a>
+    <span class="local-badge">На устройстве</span>
+  </header>
+  <main class="container" id="mainContent" tabindex="-1">
+    <div id="screenHeading" class="screen-heading"><div><p class="eyebrow" id="screenEyebrow">ВАШ ТРЕНЕРСКИЙ ПУЛЬТ</p><h1 id="heroTitle">Обзор финансов</h1><p id="topHint" class="small"></p></div></div>
+    <div class="period-bar" id="periodBar"><select id="monthSelect" aria-label="Месяц"></select><input id="yearSelect" type="number" min="1" max="9999" aria-label="Год" onchange="changeYear(this.value)" /></div>
+    <div id="financialDashboard"></div>
+    <section id="screenTools"></section>
+    <div class="hero-controls hidden" id="studentControls">
+      <div class="search-wrap" id="searchWrap"><input id="searchInput" class="search" aria-label="Поиск ученика по ФИО" placeholder="Поиск по полному ФИО" oninput="setSearch(this.value)" /></div>
+      <div class="chips" id="statusChips"><button class="chip active" id="chipAll" onclick="setGroupFilter('all')">Все</button><button class="chip" id="chipPaid" onclick="setGroupFilter('paid')">Оплатил</button><button class="chip" id="chipUnpaid" onclick="setGroupFilter('unpaid')">Не оплатил</button><button class="chip" id="chipNoShow" onclick="setGroupFilter('noshow')">Не ходил</button></div>
     </div>
-
-    <div class="container" style="padding-top:0; padding-bottom:12px;">
-      <div class="tabs">
-        <button class="tab active" id="tabKids"  onclick="setTab('Детская')">Детская</button>
-        <button class="tab" id="tabAdult" onclick="setTab('Взрослая')">Взрослая</button>
-        <button class="tab" id="tabWomen" onclick="setTab('Женская')">Женская</button>
-        <button class="tab" id="tabPay"   onclick="setTab('Оплата')">Оплата</button>
-        <button class="tab" id="tabExp"   onclick="setTab('Затраты')">Затраты</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="container">
-    <div class="hero">
-      <div class="hero-inner">
-        <div><h1 id="heroTitle">Детская группа</h1></div>
-        <div class="month-bar">
-          <input id="yearSelect" type="number" min="1" max="9999" aria-label="Год" style="max-width:100px" onchange="changeYear(this.value)" />
-          <select id="monthSelect" class="month-select" aria-label="Месяц"></select>
-        </div>
-      </div>
-
-      <div class="hero-controls">
-        <div class="legend">
-          <span><i class="g"></i> оплатил</span>
-          <span><i class="y"></i> не ходил</span>
-          <span><i class="r"></i> не оплатил</span>
-        </div>
-
-        <div class="search-wrap" id="searchWrap">
-          <input id="searchInput" class="search" placeholder="Поиск по ФИО..." oninput="setSearch(this.value)" />
-        </div>
-
-        <div class="chips" id="statusChips">
-          <button class="chip active" id="chipAll" onclick="setGroupFilter('all')">Все</button>
-          <button class="chip" id="chipPaid" onclick="setGroupFilter('paid')">Оплатили</button>
-          <button class="chip" id="chipNoShow" onclick="setGroupFilter('noshow')">Не ходили</button>
-          <button class="chip" id="chipUnpaid" onclick="setGroupFilter('unpaid')">Не оплатили</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="financialDashboard" class="card" style="margin-top:12px"></div>
-    <div class="row"><button class="btn" onclick="createPeriodCharges()">Начислить за период</button><button class="btn" onclick="openLegacy()">Без определённого года</button></div>
-    <div class="row"><button class="btn" onclick="openArchive()">Архив учеников</button><button class="btn" onclick="openAudit()">Журнал изменений</button></div>
     <div id="list" class="students-grid"></div>
-    <div class="row"><button class="btn" onclick="exportBackup()">Резервная копия JSON</button></div>
-  </div>
+  </main>
+  <nav id="bottomNav" class="bottom-nav" aria-label="Основная навигация"></nav>
 
   <!-- ADD -->
   <div id="modalAdd" class="modal hidden">
     <div class="modal-card">
       <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Добавить</h3>
-      <div class="small">Группа записи: <b id="addGroupLabel">Детская</b></div>
+      <div class="small">Группа записи: <b id="addGroupLabel">Детская</b></div><label for="addGroupSelect">Группа</label><select id="addGroupSelect" onchange="selectAddGroup(this.value)"></select>
 
       <div class="row">
         <div style="flex:1" id="addParentBox">
@@ -596,7 +112,7 @@ button{cursor:pointer}
       <div class="row" style="margin-top:12px;">
         <button class="btn primary" id="infoPayBtn">Статус</button>
         <button class="btn edit" id="infoEditBtn">Редакт.</button>
-        <button class="btn danger" id="infoDelBtn">Удалить</button>
+        <button class="btn danger" id="infoDelBtn">В архив</button>
       </div>
       <div class="row">
         <button class="btn" onclick="closeInfo()">Закрыть</button>
@@ -718,10 +234,10 @@ button{cursor:pointer}
   <!-- DELETE -->
   <div id="modalDelete" class="modal hidden">
     <div class="modal-card">
-      <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Удаление</h3>
+      <h3>Архивирование ученика</h3>
       <div class="small" id="deletePrompt"></div>
       <div class="row" style="margin-top:12px;">
-        <button class="btn danger" onclick="confirmDelete()">Удалить</button>
+        <button class="btn danger" onclick="confirmDelete()">Архивировать</button>
         <button class="btn" onclick="closeDelete()">Отмена</button>
       </div>
     </div>
@@ -821,6 +337,7 @@ let finance = initialData.finance;
 let payId=null, delId=null, editId=null;
 let sheetId=null;
 
+function groupNeedsParent(name){const g=finance.groups.find(g=>g.name===name||g.aliases?.includes(name));return g?.requiresParent ?? (g?.name==='Детская'||g?.aliases?.includes('Детская')||false);}
 function uid(){return (crypto?.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));}
 async function save(){
   const controls = [...document.querySelectorAll("button,input,select")].filter(el => !el.disabled);
@@ -901,33 +418,6 @@ function setGroupFilter(f){
   render();
 }
 
-function setTab(t){
-  tab=t;
-  document.getElementById("tabKids").classList.toggle("active", t==="Детская");
-  document.getElementById("tabAdult").classList.toggle("active", t==="Взрослая");
-  document.getElementById("tabWomen").classList.toggle("active", t==="Женская");
-  document.getElementById("tabPay").classList.toggle("active", t==="Оплата");
-  document.getElementById("tabExp").classList.toggle("active", t==="Затраты");
-  render();
-}
-
-function updateHeader(){
-  document.getElementById("topHint").textContent =
-    (tab==="Оплата") ? `Оплата • ${MONTHS[monthIndex]} ${yearIndex}` :
-    (tab==="Затраты") ? `Затраты • ${MONTHS[monthIndex]} ${yearIndex}` :
-    `Группа: ${tab} • ${MONTHS[monthIndex]} ${yearIndex}`;
-
-  document.getElementById("heroTitle").textContent =
-    (tab==="Оплата") ? "Оплата" :
-    (tab==="Затраты") ? "Затраты" :
-    `${tab} группа`;
-
-  document.getElementById("statusChips").classList.toggle("hidden", !(tab==="Детская"||tab==="Взрослая"||tab==="Женская"));
-  document.getElementById("searchWrap").classList.toggle("hidden", tab==="Затраты");
-
-  fillMonthSelect(document.getElementById("monthSelect"), monthIndex);
-}
-
 function checkPin(){
   if(document.getElementById("pinInput").value===PIN){
     document.getElementById("pinScreen").classList.add("hidden");
@@ -995,27 +485,6 @@ function attachLongPress(el, id){
 }
 
 /* ADD */
-function openAdd(){
-  const group = (tab==="Оплата") ? payGroup : (tab==="Затраты" ? "Детская" : tab);
-  modalAdd.dataset.addGroup=group;
-  document.getElementById("addGroupLabel").textContent=group;
-
-  const parentBox=document.getElementById("addParentBox");
-  const nameLabel=document.getElementById("addNameLabel");
-  const nameInput=document.getElementById("addStudentName");
-
-  if(group==="Детская"){
-    parentBox.classList.remove("hidden");
-    nameLabel.textContent="ФИО ученика";
-    nameInput.placeholder="ФИО ребёнка";
-  } else {
-    parentBox.classList.add("hidden");
-    document.getElementById("addParentName").value="";
-    nameLabel.textContent="ФИО спортсмена";
-    nameInput.placeholder="ФИО спортсмена";
-  }
-  document.getElementById("modalAdd").classList.remove("hidden");
-}
 function closeAdd(){ document.getElementById("modalAdd").classList.add("hidden"); }
 
 async function saveNewStudent(){
@@ -1025,11 +494,11 @@ async function saveNewStudent(){
   const name=document.getElementById("addStudentName").value.trim();
   const rate=Number(document.getElementById("addRate").value);
 
-  if(g==="Детская" && (!parent || !name)) return alert("Для детской: ФИО родителя и ученика.");
-  if(g!=="Детская" && !name) return alert("Заполните ФИО спортсмена.");
+  if(groupNeedsParent(g) && (!parent || !name)) return alert("Для детской: ФИО родителя и ученика.");
+  if(!groupNeedsParent(g) && !name) return alert("Заполните ФИО спортсмена.");
   if(!phone) return alert("Заполните телефон.");
 
-  students.push({id:uid(), group:g, parent:(g==="Детская"?parent:""), phone, name, rateCents: rate * 100, payments:{}});
+  students.push({id:uid(), group:g, parent:(groupNeedsParent(g)?parent:""), phone, name, rateCents: rate * 100, payments:{}});
   if(!await save()){ render(); return; }
   closeAdd();
 
@@ -1054,7 +523,7 @@ function openInfo(id){
   document.getElementById("infoRate").textContent=rubles(s.rateCents ?? ((s.rate ?? 3000)*100));
 
   const parentRow=document.getElementById("infoParentRow");
-  if(s.group==="Детская"){
+  if(groupNeedsParent(s.group)){
     parentRow.classList.remove("hidden");
     document.getElementById("infoParent").textContent=s.parent||"";
   } else parentRow.classList.add("hidden");
@@ -1077,7 +546,7 @@ function closeInfo(){ document.getElementById("modalInfo").classList.add("hidden
 document.getElementById("editGroup").addEventListener("change", ()=>{
   const g=document.getElementById("editGroup").value;
   const box=document.getElementById("editParentBox");
-  if(g==="Детская") box.classList.remove("hidden");
+  if(groupNeedsParent(g)) box.classList.remove("hidden");
   else { box.classList.add("hidden"); document.getElementById("editParentName").value=""; }
 });
 function openEdit(id){
@@ -1093,7 +562,7 @@ function openEdit(id){
   document.getElementById("editRate").value=String((s.rateCents ?? ((s.rate ?? 3000)*100))/100);
 
   const box=document.getElementById("editParentBox");
-  if(s.group==="Детская") box.classList.remove("hidden");
+  if(groupNeedsParent(s.group)) box.classList.remove("hidden");
   else box.classList.add("hidden");
 
   document.getElementById("modalEdit").classList.remove("hidden");
@@ -1109,12 +578,12 @@ async function saveEdit(){
 
   if(!phone) return alert("Заполните телефон.");
   if(!name) return alert("Заполните ФИО.");
-  if(g==="Детская" && !parent) return alert("Для детской нужно ФИО родителя.");
+  if(groupNeedsParent(g) && !parent) return alert("Для детской нужно ФИО родителя.");
 
   students[i].group=g;
   students[i].phone=phone;
   students[i].name=name;
-  students[i].parent=(g==="Детская")?parent:"";
+  students[i].parent=(groupNeedsParent(g))?parent:"";
   students[i].rateCents=rate*100;
 
   if(!await save()){ render(); return; }
@@ -1130,7 +599,7 @@ function closeEdit(){
 function openDelete(id){
   delId=id;
   const i=findIndexById(id); if(i===-1) return;
-  document.getElementById("deletePrompt").innerHTML=`Удалить ученика <b>${esc(students[i].name)}</b>?`;
+  document.getElementById("deletePrompt").innerHTML=`Архивировать ученика <b>${esc(students[i].name)}</b>? Платежи и обязательства сохранятся.`;
   document.getElementById("modalDelete").classList.remove("hidden");
 }
 async function confirmDelete(){
@@ -1184,7 +653,7 @@ if(dataStore.blocked){
   const warning = document.createElement("p");
   warning.setAttribute("role", "alert");
   warning.textContent = "Данные не загружены: " + dataStore.error + " Запись заблокирована. Исходные записи сохранены; экспортируйте резервную копию JSON.";
-  document.querySelector("#appScreen > .container").prepend(warning);
+  document.querySelector("#mainContent").prepend(warning);
   window.addEventListener("load", () => alert("Данные не загружены. Запись заблокирована, исходные записи не изменены. " + dataStore.error + " Экспортируйте резервную копию JSON; не очищайте браузер."));
 }
 // Web Locks serialize writes; the store also rejects stale snapshots.
@@ -1196,5 +665,6 @@ if("serviceWorker" in navigator){
 }
 </script>
 <script src="financial-ui.js"></script>
+<script src="mobile-ui.js"></script>
 </body>
 </html>

@@ -33,7 +33,7 @@ class BrowserTests(unittest.TestCase):
         cls.browser.close(); cls.pw.stop(); cls.server.shutdown(); cls.server.server_close(); cls.thread.join()
 
     def setUp(self):
-        self.ctx = self.browser.new_context(viewport={'width':390,'height':844}, accept_downloads=True)
+        self.ctx = self.browser.new_context(viewport={'width':390,'height':844}, accept_downloads=True, reduced_motion='reduce')
         self.page = self.ctx.new_page()
         self.dialogs = []
         self.errors = []
@@ -51,7 +51,7 @@ class BrowserTests(unittest.TestCase):
         self.page.click('button:has-text("Войти")')
 
     def add(self, name='Тестовый ученик', group='Детская'):
-        self.page.click({'Детская':'#tabKids','Взрослая':'#tabAdult','Женская':'#tabWomen'}[group])
+        self.page.evaluate('(name)=>openGroupByName(name)',group)
         self.page.click('button[title="Добавить"]')
         if group == 'Детская': self.page.fill('#addParentName','Тестовый родитель')
         self.page.fill('#addPhone','+70000000000'); self.page.fill('#addStudentName',name)
@@ -61,7 +61,7 @@ class BrowserTests(unittest.TestCase):
     def test_students_groups_edit_search_and_filters(self):
         self.login()
         for group in ['Детская','Взрослая','Женская']: self.add(group+' ученик',group)
-        self.page.click('#tabKids'); self.assertEqual(self.page.locator('#list .tile').count(),1)
+        self.page.evaluate('openGroupByName("Детская")'); self.assertEqual(self.page.locator('#list .tile').count(),1)
         self.page.locator('#list .tile').click(); self.page.click('#infoEditBtn')
         self.page.fill('#editName','Новое имя'); self.page.locator('#modalEdit button:has-text("Сохранить")').click()
         self.page.wait_for_function('document.getElementById("modalEdit").classList.contains("hidden")')
@@ -83,11 +83,11 @@ class BrowserTests(unittest.TestCase):
         self.page.evaluate('openPay(students[0].id)'); self.page.select_option('#payAmountSelect','-1'); self.page.locator('#modalPay button:has-text("Применить")').click()
         self.page.wait_for_function('document.getElementById("modalPay").classList.contains("hidden")')
         self.page.click('#chipNoShow'); self.assertEqual(self.page.locator('#list .tile').count(),1)
-        self.page.click('#tabExp'); self.page.click('button:has-text("＋ Расход")'); self.page.fill('#expAmount','500'); self.page.fill('#expCategory','constructor')
+        self.page.evaluate('navigate("expenses")'); self.page.get_by_role('button',name='Добавить расход',exact=True).click(); self.page.fill('#expAmount','500'); self.page.fill('#expCategory','constructor')
         self.page.locator('#modalExp button:has-text("Сохранить")').click(); self.page.wait_for_function('finance.expenses.length===1 && document.getElementById("modalExp").classList.contains("hidden")')
         self.assertEqual(self.page.evaluate('expensesForMonth(monthIndex)'),500)
         self.page.locator('#list .tile').click(); self.page.locator('#expDetailsList button:has-text("Удалить")').click(); self.page.wait_for_function('finance.expenses[0].voided && document.getElementById("modalExpDetails").classList.contains("hidden")')
-        self.page.evaluate('openDelete(students[0].id)'); self.page.locator('#modalDelete button:has-text("Удалить")').click(); self.page.wait_for_function('students.length===0 && document.getElementById("modalDelete").classList.contains("hidden")')
+        self.page.evaluate('openDelete(students[0].id)'); self.page.locator('#modalDelete button:has-text("Архивировать")').click(); self.page.wait_for_function('students.length===0 && document.getElementById("modalDelete").classList.contains("hidden")')
         state=self.page.evaluate('dataStore.snapshot()')
         self.assertEqual(len(state['archivedStudents']),1); self.assertEqual(len(state['finance']['expenses']),1); self.assertTrue(state['finance']['expenses'][0]['voided'])
         backups=self.page.evaluate('dataStore.exportBackup()')
@@ -96,7 +96,7 @@ class BrowserTests(unittest.TestCase):
     def test_corruption_is_read_only_and_download_preserves_raw(self):
         self.page.goto(self.url); self.page.evaluate('localStorage.setItem("bjj_students","{broken")'); self.login()
         self.assertTrue(self.page.evaluate('dataStore.blocked'))
-        with self.page.expect_download() as info: self.page.click('button:has-text("Резервная копия JSON")')
+        with self.page.expect_download() as info: self.page.evaluate('navigate("backup")'); self.page.click('button:has-text("Резервная копия JSON")')
         exported=json.loads(Path(info.value.path()).read_text())
         self.assertEqual(exported['raw']['bjj_students'],'{broken'); self.assertIsNone(exported['current'])
         self.page.evaluate('students.push({id:"x",name:"X",group:"Детская",payments:{}})')
@@ -139,7 +139,7 @@ class BrowserTests(unittest.TestCase):
         self.assertTrue(self.page.locator('#modalPay').is_visible())
 
     def test_invalid_form_does_not_write(self):
-        self.login(); self.page.click('button[title="Добавить"]')
+        self.login(); self.page.get_by_role('button',name='Добавить ученика',exact=True).click()
         self.page.locator('#modalAdd button:has-text("Сохранить")').click()
         self.assertEqual(self.page.evaluate('students.length'),0)
         self.assertIsNone(self.page.evaluate(f'localStorage.getItem("{KEY}")'))
@@ -151,15 +151,15 @@ class BrowserTests(unittest.TestCase):
         self.assertTrue(self.page.evaluate('dataStore.blocked'))
         self.assertTrue(self.page.locator('[role="alert"]').is_visible())
         with self.page.expect_event('dialog') as error:
-            self.page.click('button:has-text("Резервная копия JSON")')
+            self.page.evaluate('navigate("backup")'); self.page.click('button:has-text("Резервная копия JSON")')
         self.assertIn('Не удалось экспортировать',error.value.message)
 
     def test_successful_download_contains_active_archived_and_raw_data(self):
         self.login(); self.add()
         self.page.evaluate('openDelete(students[0].id)')
-        self.page.locator('#modalDelete button:has-text("Удалить")').click()
+        self.page.locator('#modalDelete button:has-text("Архивировать")').click()
         self.page.wait_for_function('document.getElementById("modalDelete").classList.contains("hidden")')
-        with self.page.expect_download() as info: self.page.click('button:has-text("Резервная копия JSON")')
+        with self.page.expect_download() as info: self.page.evaluate('navigate("backup")'); self.page.click('button:has-text("Резервная копия JSON")')
         data=json.loads(Path(info.value.path()).read_text())
         self.assertEqual(data['format'],'CoachControlBackup')
         self.assertEqual(len(data['current']['archivedStudents']),1)

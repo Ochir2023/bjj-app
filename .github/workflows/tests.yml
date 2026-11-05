@@ -17,7 +17,9 @@ jobs:
           python-version: '3.12'
       - run: node tests/data-store.test.cjs
       - run: node tests/finance.test.cjs
+      - run: node tests/groups.test.cjs
       - run: python -m pip install -r requirements-test.txt
       - run: python -m playwright install --with-deps chromium
       - run: python tests/browser_test.py
       - run: python tests/financial_browser_test.py
+      - run: python tests/mobile_browser_test.py

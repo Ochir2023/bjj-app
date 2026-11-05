@@ -684,7 +684,3 @@ function openLegacyResolution(id) {
     }
   });
 }
-setTab("Детская");
-setGroupFilter("all");
-closeAll();
-fillMonthSelect(document.getElementById("monthSelect"), monthIndex);
