@@ -449,6 +449,7 @@ button{cursor:pointer}
   font-size:16px;
   font-weight:800;
 }
+.modal-card{max-height:calc(100dvh - 36px);overflow-y:auto}
 </style>
 </head>
 
@@ -504,7 +505,8 @@ button{cursor:pointer}
       <div class="hero-inner">
         <div><h1 id="heroTitle">Детская группа</h1></div>
         <div class="month-bar">
-          <select id="monthSelect" class="month-select"></select>
+          <input id="yearSelect" type="number" min="1" max="9999" aria-label="Год" style="max-width:100px" onchange="changeYear(this.value)" />
+          <select id="monthSelect" class="month-select" aria-label="Месяц"></select>
         </div>
       </div>
 
@@ -528,6 +530,9 @@ button{cursor:pointer}
       </div>
     </div>
 
+    <div id="financialDashboard" class="card" style="margin-top:12px"></div>
+    <div class="row"><button class="btn" onclick="createPeriodCharges()">Начислить за период</button><button class="btn" onclick="openLegacy()">Без определённого года</button></div>
+    <div class="row"><button class="btn" onclick="openArchive()">Архив учеников</button><button class="btn" onclick="openAudit()">Журнал изменений</button></div>
     <div id="list" class="students-grid"></div>
     <div class="row"><button class="btn" onclick="exportBackup()">Резервная копия JSON</button></div>
   </div>
@@ -604,20 +609,26 @@ button{cursor:pointer}
     <div class="modal-card">
       <h3 style="margin:0;text-transform:uppercase;letter-spacing:.35px;font-size:14px;">Оплата / Статус</h3>
       <div class="small" id="payPrompt"></div>
+      <div class="row"><select id="payOperation" aria-label="Тип операции" onchange="onPayTypeChange()"><option value="payment">Платёж</option><option value="refund">Возврат</option></select></div>
+      <div id="refundSourceBox" class="row hidden"><select id="refundSource" aria-label="Исходный платёж" onchange="selectRefundSource()"></select></div>
+      <div class="row"><input id="payReason" placeholder="Причина исправления (для редактирования)" /></div>
+      <div class="row"><button class="btn" onclick="openStudentHistory(payId)">История всех платежей</button></div>
 
       <div class="row">
         <div style="flex:1">
           <div class="small">Месяц</div>
+          <input id="payYear" type="number" min="1" max="9999" aria-label="Год назначения" />
           <select id="payMonthSelect"></select>
         </div>
         <div style="flex:1">
           <div class="small">Статус</div>
           <select id="payAmountSelect" onchange="onPayTypeChange()">
-            <option value="3000">Оплатил 3000 ₽</option>
-            <option value="1500">Оплатил 1500 ₽</option>
+            <option value="3000">Платёж 3000 ₽</option>
+            <option value="1500">Платёж 1500 ₽</option>
             <option value="custom">Вписать сумму вручную…</option>
             <option value="-1">Не ходил</option>
-            <option value="0">Не оплатил</option>
+            <option value="0">Не оплатил / начислить тариф</option>
+            <option value="attended">Ходил (посещаемость)</option>
           </select>
         </div>
       </div>
@@ -625,11 +636,11 @@ button{cursor:pointer}
       <div id="customPayBox" class="row hidden" style="margin-top:0;">
         <div style="flex:1">
           <div class="small">Сумма (₽)</div>
-          <input id="payCustomInput" type="number" placeholder="Напр. 2500" inputmode="numeric" />
+          <input id="payCustomInput" step="0.01" type="number" placeholder="Напр. 2500" inputmode="numeric" />
         </div>
         <div style="flex:1">
           <div class="small">Подсказка</div>
-          <input value="Любая сумма > 0 = 'оплатил'" disabled />
+          <input value="Статус зависит от погашения начисления" disabled />
         </div>
       </div>
 
@@ -640,14 +651,14 @@ button{cursor:pointer}
         </div>
         <div style="flex:1">
           <div class="small">Примечание</div>
-          <input value="Дата сохраняется только если сумма > 0" disabled />
+          <input value="Дата фактического получения / возврата" disabled />
         </div>
       </div>
 
       <div style="margin-top:10px;">
         <label class="small" style="display:flex;gap:10px;align-items:center;">
           <input type="checkbox" id="rememberRate" style="width:auto" />
-          Запомнить 1500/3000 как тариф ученика (ручную сумму не запоминаем)
+          Запомнить 1500/3000 для будущих начислений (старые начисления не меняются)
         </label>
       </div>
 
@@ -724,11 +735,12 @@ button{cursor:pointer}
       <div class="row">
         <div style="flex:1">
           <div class="small">Месяц</div>
+          <input id="expYear" type="number" min="1" max="9999" aria-label="Год расхода" />
           <select id="expMonth"></select>
         </div>
         <div style="flex:1">
           <div class="small">Сумма (₽)</div>
-          <input id="expAmount" type="number" placeholder="Напр. 5000" inputmode="numeric" />
+          <input id="expAmount" step="0.01" type="number" placeholder="Напр. 5000" inputmode="numeric" />
         </div>
       </div>
 
@@ -738,6 +750,8 @@ button{cursor:pointer}
       </div>
 
       <div style="margin-top:10px;">
+        <div class="small">Дата расхода</div><input id="expDate" type="date" />
+        <div class="small">Причина исправления</div><input id="expReason" placeholder="Обязательна при редактировании" />
         <div class="small">Комментарий</div>
         <input id="expNote" placeholder="По желанию" />
       </div>
@@ -779,6 +793,7 @@ button{cursor:pointer}
   </div>
 </div>
 
+<script src="finance.js"></script>
 <script src="data-store.js"></script>
 <script>
 const PIN="1234";
@@ -786,6 +801,7 @@ const MONTHS=["Январь","Февраль","Март","Апрель","Май"
 
 let tab="Детская";
 let monthIndex=new Date().getMonth();
+let yearIndex=new Date().getFullYear();
 let payGroup="Детская";
 let groupFilter="all";
 let searchText="";
@@ -793,12 +809,14 @@ let searchText="";
 const dataStore = CoachData.create({
   getItem: key => localStorage.getItem(key),
   setItem: (key, value) => localStorage.setItem(key, value),
+  removeItem: key => localStorage.removeItem(key),
   key: index => localStorage.key(index),
   get length() { return localStorage.length; }
-});
+}, {accounting: CoachFinance});
 const initialData = dataStore.load();
 let students = initialData.students;
-let expenses = initialData.expenses;
+let expenses = initialData.expenses; // Immutable legacy expense source.
+let finance = initialData.finance;
 
 let payId=null, delId=null, editId=null;
 let sheetId=null;
@@ -809,14 +827,21 @@ async function save(){
   controls.forEach(el => el.disabled = true);
   try {
     if(!navigator.locks) throw new Error("Браузер не поддерживает безопасную блокировку записи. Используйте современный браузер и HTTPS.");
+    const prior = dataStore.snapshot();
+    const removed = prior.students.filter(s => !students.some(n=>n.id===s.id));
+    CoachFinance.syncStudents(finance, students, [...prior.archivedStudents, ...removed]);
+    // Creating a pupil explicitly creates their first charge, never when viewing a month.
+    students.filter(s=>!prior.students.some(old=>old.id===s.id)).forEach(s=>CoachFinance.ensureCharge(finance,s.id,`${String(yearIndex).padStart(4,'0')}-${String(monthIndex+1).padStart(2,'0')}`));
     const nextStudents = JSON.parse(JSON.stringify(students));
     const nextExpenses = JSON.parse(JSON.stringify(expenses));
-    await navigator.locks.request("coachcontrol-data-write", () => dataStore.commit(nextStudents, nextExpenses));
+    const nextFinance = CoachFinance.copy(finance);
+    const saved = await navigator.locks.request("coachcontrol-data-write", () => dataStore.commit(nextStudents, nextExpenses, nextFinance));
+    finance = saved.finance;
     return true;
   } catch(error) {
     const previous = dataStore.snapshot();
-    students = previous.students; expenses = previous.expenses;
-    alert("Изменения не сохранены. Исходные данные сохранены. " + error.message + " Используйте резервную копию JSON.");
+    students = previous.students; expenses = previous.expenses; finance = previous.finance;
+    alert("Изменения не сохранены. Запись остановлена. " + error.message + " Используйте резервную копию JSON.");
     return false;
   } finally { controls.forEach(el => el.disabled = false); }
 }
@@ -848,23 +873,6 @@ function fillMonthSelect(sel, selected){
   sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===selected?"selected":""}>${m}</option>`).join("");
 }
 
-/* payments[mi] = { amount, date } */
-function getPaymentEntry(s, mi){
-  const raw = s.payments ? s.payments[mi] : 0;
-  if(typeof raw === "number") return { amount: raw, date: "" };
-  if(raw === true) return { amount: 3000, date: "" };
-  if(raw === false) return { amount: 0, date: "" };
-  if(raw && typeof raw === "object"){
-    return { amount: Number(raw.amount)||0, date: typeof raw.date==="string" ? raw.date : "" };
-  }
-  return { amount: Number(raw)||0, date: "" };
-}
-function setPaymentEntry(s, mi, amount, dateStr){
-  if(!s.payments || typeof s.payments !== "object") s.payments = {};
-  s.payments[mi] = { amount: Number(amount)||0, date: dateStr||"" };
-}
-function monthStatusValue(s, mi){ return getPaymentEntry(s, mi).amount; }
-
 function statusLabel(v){
   if(v===-1) return "Не ходил";
   if(v===0) return "Не оплатил";
@@ -879,19 +887,6 @@ function initials(fullName){
   const a = parts[0][0] || "";
   const b = (parts[1]?.[0]) || (parts[0]?.[1]) || "";
   return (a + b).toUpperCase();
-}
-
-function incomeForMonth(mi, group=null){
-  let sum=0;
-  students.forEach(s=>{
-    if(group && s.group!==group) return;
-    const v=monthStatusValue(s,mi);
-    if(v>0) sum+=v;
-  });
-  return sum;
-}
-function expensesForMonth(mi){
-  return expenses.filter(e=>Number(e.month)===mi).reduce((a,e)=>a+(Number(e.amount)||0),0);
 }
 
 /* Legacy records are normalized in memory only. No year or month is inferred.
@@ -918,9 +913,9 @@ function setTab(t){
 
 function updateHeader(){
   document.getElementById("topHint").textContent =
-    (tab==="Оплата") ? `Оплата • ${MONTHS[monthIndex]}` :
-    (tab==="Затраты") ? `Затраты • ${MONTHS[monthIndex]}` :
-    `Группа: ${tab} • ${MONTHS[monthIndex]}`;
+    (tab==="Оплата") ? `Оплата • ${MONTHS[monthIndex]} ${yearIndex}` :
+    (tab==="Затраты") ? `Затраты • ${MONTHS[monthIndex]} ${yearIndex}` :
+    `Группа: ${tab} • ${MONTHS[monthIndex]} ${yearIndex}`;
 
   document.getElementById("heroTitle").textContent =
     (tab==="Оплата") ? "Оплата" :
@@ -999,246 +994,6 @@ function attachLongPress(el, id){
   });
 }
 
-/* ===== render tiles (students) ===== */
-function renderStudentTiles(arr){
-  const list=document.getElementById("list");
-  if(arr.length===0){
-    const empty=document.createElement("div");
-    empty.className="card";
-    empty.style.gridColumn="1 / -1";
-    empty.innerHTML=`<div class="small">Ничего не найдено. Добавьте ученика “＋”.</div>`;
-    list.appendChild(empty);
-    return;
-  }
-
-  arr.forEach(s=>{
-    const v = monthStatusValue(s, monthIndex);
-    const dotCls = statusDotClass(v);
-    const ini = initials(s.name);
-
-    const tile=document.createElement("div");
-    tile.className="tile";
-    tile.innerHTML=`
-      <div class="tile-left">
-        <div class="avatar">${esc(ini)}</div>
-        <div class="tile-name">${esc(s.name)}</div>
-      </div>
-      <div class="tile-right">
-        <span class="dot ${dotCls}" title="${esc(statusLabel(v))}"></span>
-        <span class="chev">›</span>
-      </div>
-    `;
-    attachLongPress(tile, s.id);
-    list.appendChild(tile);
-  });
-}
-
-/* render */
-function render(){
-  updateHeader();
-  const list=document.getElementById("list");
-  list.innerHTML="";
-
-  if(tab==="Оплата"){ renderPaymentTiles(); return; }
-  if(tab==="Затраты"){ renderExpenses(); return; }
-
-  let arr=students.filter(s=>s.group===tab).filter(matchesSearch);
-
-  if(groupFilter==="paid") arr = arr.filter(s=>monthStatusValue(s,monthIndex)>0);
-  if(groupFilter==="noshow") arr = arr.filter(s=>monthStatusValue(s,monthIndex)===-1);
-  if(groupFilter==="unpaid") arr = arr.filter(s=>monthStatusValue(s,monthIndex)===0);
-
-  renderStudentTiles(arr);
-}
-
-/* payment tab: student tiles by sections */
-function renderPaymentTiles(){
-  const list=document.getElementById("list");
-
-  const head=document.createElement("div");
-  head.className="grid-header";
-  head.innerHTML=`
-    <div class="left"><span style="font-weight:900;">Оплата</span><span class="badge">${MONTHS[monthIndex]}</span></div>
-    <div style="width:170px; max-width:40vw;">
-      <select id="payMonthTop" style="padding:8px 10px; border-radius:12px;"></select>
-    </div>
-  `;
-  list.appendChild(head);
-
-  const monthSel=head.querySelector("#payMonthTop");
-  fillMonthSelect(monthSel, monthIndex);
-  monthSel.onchange=()=>{ monthIndex=Number(monthSel.value); render(); };
-
-  const gbar=document.createElement("div");
-  gbar.className="grid-header";
-  gbar.innerHTML=`
-    <div class="left"><span class="small" style="text-transform:none;letter-spacing:0;">Группа:</span></div>
-    <div class="pay-subtabs">
-      <button class="pay-subtab" id="pgKids">Детская</button>
-      <button class="pay-subtab" id="pgAdult">Взрослая</button>
-      <button class="pay-subtab" id="pgWomen">Женская</button>
-    </div>
-  `;
-  list.appendChild(gbar);
-
-  const pgKids=gbar.querySelector("#pgKids");
-  const pgAdult=gbar.querySelector("#pgAdult");
-  const pgWomen=gbar.querySelector("#pgWomen");
-  function setPayGroup(g){ payGroup=g; render(); }
-  pgKids.onclick=()=>setPayGroup("Детская");
-  pgAdult.onclick=()=>setPayGroup("Взрослая");
-  pgWomen.onclick=()=>setPayGroup("Женская");
-  pgKids.classList.toggle("active", payGroup==="Детская");
-  pgAdult.classList.toggle("active", payGroup==="Взрослая");
-  pgWomen.classList.toggle("active", payGroup==="Женская");
-
-  const groupList=students.filter(s=>s.group===payGroup).filter(matchesSearch);
-  const paid=groupList.filter(s=>monthStatusValue(s,monthIndex)>0);
-  const notCame=groupList.filter(s=>monthStatusValue(s,monthIndex)===-1);
-  const notPaid=groupList.filter(s=>monthStatusValue(s,monthIndex)===0);
-
-  const sumGroup=incomeForMonth(monthIndex, payGroup);
-  const sumAll=incomeForMonth(monthIndex);
-
-  const kpi=document.createElement("div");
-  kpi.className="grid-header";
-  kpi.innerHTML=`
-    <div class="left" style="text-transform:none;">
-      <span class="small">
-        Доход группы: <b>${sumGroup} ₽</b> • Всего: <b>${sumAll} ₽</b>
-        • 🟢 ${paid.length} • 🟡 ${notCame.length} • 🔴 ${notPaid.length}
-      </span>
-    </div>
-    <div class="count">${payGroup}</div>
-  `;
-  list.appendChild(kpi);
-
-  addSection("Оплатили", "green", paid);
-  addSection("Не ходили", "yellow", notCame);
-  addSection("Не оплатили", "red", notPaid);
-
-  function addSection(title,color,arr){
-    const h=document.createElement("div");
-    h.className="grid-header";
-    h.innerHTML=`
-      <div class="left"><span class="grid-dot ${color}"></span>${title}</div>
-      <div class="count">${arr.length} чел.</div>
-    `;
-    list.appendChild(h);
-    renderStudentTiles(arr);
-  }
-}
-
-/* ===== Expenses (categories tiles) ===== */
-function renderExpenses(){
-  const list=document.getElementById("list");
-
-  const income = incomeForMonth(monthIndex);
-  const exp = expensesForMonth(monthIndex);
-  const net = income - exp;
-
-  const summary=document.createElement("div");
-  summary.className="grid-header";
-  summary.innerHTML=`
-    <div class="left" style="text-transform:none;">
-      <span class="small">
-        Доход: <b>${income} ₽</b> • Расходы: <b>${exp} ₽</b> •
-        Итог: <b style="color:${net>=0?'#1F7A45':'#A83A2D'}">${net} ₽</b>
-      </span>
-    </div>
-    <div><button class="btn primary" style="width:auto" onclick="openExpense()">＋ Расход</button></div>
-  `;
-  list.appendChild(summary);
-
-  const expList = expenses.filter(e=>Number(e.month)===monthIndex);
-
-  if(expList.length===0){
-    const empty=document.createElement("div");
-    empty.className="card";
-    empty.style.gridColumn="1 / -1";
-    empty.innerHTML=`<div class="small">Расходов за ${MONTHS[monthIndex]} нет.</div>`;
-    list.appendChild(empty);
-    return;
-  }
-
-  const groups = Object.create(null);
-  expList.forEach(e=>{
-    const title = (e.category || "Другое").trim();
-    const key = title.toLowerCase();
-    if(!groups[key]) groups[key] = { title, total: 0 };
-    groups[key].total += Number(e.amount||0);
-  });
-
-  Object.entries(groups)
-    .sort((a,b)=>b[1].total-a[1].total)
-    .forEach(([key, g])=>{
-      const tile=document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML=`
-        <div class="tile-left">
-          <div class="avatar">₽</div>
-          <div class="tile-name">${esc(g.title)} — ${g.total} ₽</div>
-        </div>
-        <div class="tile-right">
-          <span class="chev">›</span>
-        </div>
-      `;
-      tile.onclick=()=>openExpenseDetails(key, g.title);
-      list.appendChild(tile);
-    });
-}
-
-/* ===== Expense details modal ===== */
-function openExpenseDetails(key, title){
-  const list=document.getElementById("expDetailsList");
-  list.innerHTML="";
-
-  document.getElementById("expDetailsTitle").innerHTML=
-    `Категория: <b>${esc(title)}</b> • ${MONTHS[monthIndex]}`;
-
-  const items = expenses
-    .filter(e=>Number(e.month)===monthIndex)
-    .filter(e=>(e.category||"").trim().toLowerCase()===key)
-    .sort((a,b)=>(b.ts||0)-(a.ts||0));
-
-  if(items.length===0){
-    list.innerHTML=`<div class="small">Нет записей.</div>`;
-  } else {
-    items.forEach(e=>{
-      const row=document.createElement("div");
-      row.className="card";
-      row.style.marginBottom="8px";
-      row.innerHTML=`
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-          <div style="min-width:0">
-            <div style="font-weight:900;">${Number(e.amount||0)} ₽</div>
-            <div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${esc(e.note||"Без комментария")}
-            </div>
-          </div>
-          <button class="btn danger mini">Удалить</button>
-        </div>
-      `;
-      row.querySelector("button").onclick = () => deleteExpense(e.id);
-      list.appendChild(row);
-    });
-  }
-
-  document.getElementById("modalExpDetails").classList.remove("hidden");
-}
-function closeExpenseDetails(){
-  document.getElementById("modalExpDetails").classList.add("hidden");
-}
-async function deleteExpense(id){
-  const index = expenses.findIndex(e=>e.id===id);
-  if(index===-1) return;
-  expenses.splice(index,1);
-  if(!await saveExpenses()){ render(); return; }
-  // остаёмся в деталях — просто перерисуем список
-  closeExpenseDetails();
-  render();
-}
-
 /* ADD */
 function openAdd(){
   const group = (tab==="Оплата") ? payGroup : (tab==="Затраты" ? "Детская" : tab);
@@ -1274,7 +1029,7 @@ async function saveNewStudent(){
   if(g!=="Детская" && !name) return alert("Заполните ФИО спортсмена.");
   if(!phone) return alert("Заполните телефон.");
 
-  students.push({id:uid(), group:g, parent:(g==="Детская"?parent:""), phone, name, rate, payments:{}});
+  students.push({id:uid(), group:g, parent:(g==="Детская"?parent:""), phone, name, rateCents: rate * 100, payments:{}});
   if(!await save()){ render(); return; }
   closeAdd();
 
@@ -1292,11 +1047,11 @@ function openInfo(id){
   const pay=getPaymentEntry(s, monthIndex);
   const v=pay.amount;
 
-  document.getElementById("infoSub").innerHTML=`Месяц: <b>${MONTHS[monthIndex]}</b>`;
+  document.getElementById("infoSub").innerHTML=`Месяц: <b>${MONTHS[monthIndex]} ${yearIndex}</b>`;
   document.getElementById("infoName").textContent=s.name||"";
   document.getElementById("infoGroup").textContent=s.group||"";
   document.getElementById("infoPhone").textContent=s.phone||"";
-  document.getElementById("infoRate").textContent=(s.rate||3000)+" ₽";
+  document.getElementById("infoRate").textContent=rubles(s.rateCents ?? ((s.rate ?? 3000)*100));
 
   const parentRow=document.getElementById("infoParentRow");
   if(s.group==="Детская"){
@@ -1318,107 +1073,6 @@ function openInfo(id){
 }
 function closeInfo(){ document.getElementById("modalInfo").classList.add("hidden"); }
 
-/* PAY */
-function onPayTypeChange(){
-  const sel=document.getElementById("payAmountSelect").value;
-  document.getElementById("customPayBox").classList.toggle("hidden", sel!=="custom");
-  if(sel!=="custom") document.getElementById("payCustomInput").value="";
-}
-function openPay(id){
-  payId=id;
-  const i=findIndexById(id); if(i===-1) return;
-  const s=students[i];
-
-  const monthSel=document.getElementById("payMonthSelect");
-  const amountSel=document.getElementById("payAmountSelect");
-  const dateInp=document.getElementById("payDateInput");
-
-  fillMonthSelect(monthSel, monthIndex);
-  document.getElementById("rememberRate").checked=false;
-
-  const setPrompt=(mi)=>{
-    const p=getPaymentEntry(s, mi);
-    const d=(p.amount>0 && p.date)?` • <b>${esc(p.date)}</b>`:"";
-    document.getElementById("payPrompt").innerHTML=
-      `Ученик: <b>${esc(s.name)}</b><br><span class="small">За ${MONTHS[mi]}: <b>${esc(statusLabel(p.amount))}</b>${d}</span>`;
-  };
-
-  setPrompt(monthIndex);
-
-  const cur=getPaymentEntry(s, monthIndex);
-  dateInp.value=cur.date||"";
-
-  if([3000,1500,-1,0].includes(cur.amount)){
-    amountSel.value=String(cur.amount);
-    onPayTypeChange();
-  } else if(cur.amount>0){
-    amountSel.value="custom";
-    onPayTypeChange();
-    document.getElementById("payCustomInput").value=String(cur.amount);
-  } else {
-    amountSel.value=String(s.rate||3000);
-    onPayTypeChange();
-  }
-
-  monthSel.onchange=()=>{
-    const mi=Number(monthSel.value);
-    setPrompt(mi);
-    const ent=getPaymentEntry(s, mi);
-    dateInp.value=ent.date||"";
-
-    if([3000,1500,-1,0].includes(ent.amount)){
-      amountSel.value=String(ent.amount);
-      onPayTypeChange();
-    } else if(ent.amount>0){
-      amountSel.value="custom";
-      onPayTypeChange();
-      document.getElementById("payCustomInput").value=String(ent.amount);
-    } else {
-      amountSel.value=String(s.rate||3000);
-      onPayTypeChange();
-    }
-  };
-
-  document.getElementById("modalPay").classList.remove("hidden");
-}
-async function applyPay(){
-  const i=findIndexById(payId); if(i===-1){closePay();return;}
-  const mi=Number(document.getElementById("payMonthSelect").value);
-  const sel=document.getElementById("payAmountSelect").value;
-  const remember=document.getElementById("rememberRate").checked;
-  let payDate=(document.getElementById("payDateInput").value||"").trim();
-
-  let val=0;
-  if(sel==="custom"){
-    const raw=Number(document.getElementById("payCustomInput").value);
-    if(!raw || raw<=0) return alert("Введите сумму > 0 для ручной оплаты.");
-    val=raw;
-  } else {
-    val=Number(sel);
-  }
-
-  if(val>0){
-    if(!payDate) payDate=new Date().toISOString().slice(0,10);
-  } else payDate="";
-
-  const previousPayment = getPaymentEntry(students[i], mi);
-  if(Object.prototype.hasOwnProperty.call(students[i].payments || {}, mi) &&
-     (previousPayment.amount !== val || previousPayment.date !== payDate) &&
-     !confirm("За этот месяц уже есть запись. Год старых платежей не определён. Изменить запись? Предыдущая версия будет сохранена в резервной копии.")) return;
-  setPaymentEntry(students[i], mi, val, payDate);
-  if(remember && (val===1500 || val===3000)) students[i].rate=val;
-
-  monthIndex=mi;
-  if(!await save()){ render(); return; }
-  closePay();
-  render();
-}
-function closePay(){
-  document.getElementById("modalPay").classList.add("hidden");
-  document.getElementById("payCustomInput").value="";
-  payId=null;
-}
-
 /* EDIT */
 document.getElementById("editGroup").addEventListener("change", ()=>{
   const g=document.getElementById("editGroup").value;
@@ -1436,7 +1090,7 @@ function openEdit(id){
   document.getElementById("editPhone").value=s.phone||"";
   document.getElementById("editName").value=s.name||"";
   document.getElementById("editParentName").value=s.parent||"";
-  document.getElementById("editRate").value=String(s.rate||3000);
+  document.getElementById("editRate").value=String((s.rateCents ?? ((s.rate ?? 3000)*100))/100);
 
   const box=document.getElementById("editParentBox");
   if(s.group==="Детская") box.classList.remove("hidden");
@@ -1461,7 +1115,7 @@ async function saveEdit(){
   students[i].phone=phone;
   students[i].name=name;
   students[i].parent=(g==="Детская")?parent:"";
-  students[i].rate=rate;
+  students[i].rateCents=rate*100;
 
   if(!await save()){ render(); return; }
   closeEdit();
@@ -1487,32 +1141,6 @@ async function confirmDelete(){
   render();
 }
 function closeDelete(){ document.getElementById("modalDelete").classList.add("hidden"); delId=null; }
-
-/* EXPENSE */
-function openExpense(){
-  document.getElementById("modalExp").classList.remove("hidden");
-  fillMonthSelect(document.getElementById("expMonth"), monthIndex);
-  document.getElementById("expMonth").value=String(monthIndex);
-  document.getElementById("expAmount").value="";
-  document.getElementById("expCategory").value="";
-  document.getElementById("expNote").value="";
-}
-function closeExpense(){ document.getElementById("modalExp").classList.add("hidden"); }
-async function saveExpense(){
-  const m=Number(document.getElementById("expMonth").value);
-  const amount=Number(document.getElementById("expAmount").value);
-  const category=document.getElementById("expCategory").value.trim();
-  const note=document.getElementById("expNote").value.trim();
-
-  if(!amount || amount<=0) return alert("Введите сумму расхода > 0.");
-  if(!category) return alert("Введите категорию (например: аренда).");
-
-  expenses.push({id:uid(), month:m, amount, category, note, ts:Date.now()});
-  if(!await saveExpenses()){ render(); return; }
-  monthIndex=m;
-  closeExpense();
-  render();
-}
 
 /* ===== Action Sheet ===== */
 function openSheet(id){
@@ -1561,14 +1189,12 @@ if(dataStore.blocked){
 }
 // Web Locks serialize writes; the store also rejects stale snapshots.
 
-setTab("Детская");
-setGroupFilter("all");
-closeAll();
-fillMonthSelect(document.getElementById("monthSelect"), monthIndex);
+
 
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));
 }
 </script>
+<script src="financial-ui.js"></script>
 </body>
 </html>
