@@ -529,6 +529,7 @@ button{cursor:pointer}
     </div>
 
     <div id="list" class="students-grid"></div>
+    <div class="row"><button class="btn" onclick="exportBackup()">Резервная копия JSON</button></div>
   </div>
 
   <!-- ADD -->
@@ -778,6 +779,7 @@ button{cursor:pointer}
   </div>
 </div>
 
+<script src="data-store.js"></script>
 <script>
 const PIN="1234";
 const MONTHS=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
@@ -788,15 +790,49 @@ let payGroup="Детская";
 let groupFilter="all";
 let searchText="";
 
-let students=JSON.parse(localStorage.getItem("bjj_students"))||[];
-let expenses=JSON.parse(localStorage.getItem("bjj_expenses"))||[];
+const dataStore = CoachData.create({
+  getItem: key => localStorage.getItem(key),
+  setItem: (key, value) => localStorage.setItem(key, value),
+  key: index => localStorage.key(index),
+  get length() { return localStorage.length; }
+});
+const initialData = dataStore.load();
+let students = initialData.students;
+let expenses = initialData.expenses;
 
 let payId=null, delId=null, editId=null;
 let sheetId=null;
 
 function uid(){return (crypto?.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));}
-function save(){localStorage.setItem("bjj_students",JSON.stringify(students));}
-function saveExpenses(){localStorage.setItem("bjj_expenses",JSON.stringify(expenses));}
+async function save(){
+  const controls = [...document.querySelectorAll("button,input,select")].filter(el => !el.disabled);
+  controls.forEach(el => el.disabled = true);
+  try {
+    if(!navigator.locks) throw new Error("Браузер не поддерживает безопасную блокировку записи. Используйте современный браузер и HTTPS.");
+    const nextStudents = JSON.parse(JSON.stringify(students));
+    const nextExpenses = JSON.parse(JSON.stringify(expenses));
+    await navigator.locks.request("coachcontrol-data-write", () => dataStore.commit(nextStudents, nextExpenses));
+    return true;
+  } catch(error) {
+    const previous = dataStore.snapshot();
+    students = previous.students; expenses = previous.expenses;
+    alert("Изменения не сохранены. Исходные данные сохранены. " + error.message + " Используйте резервную копию JSON.");
+    return false;
+  } finally { controls.forEach(el => el.disabled = false); }
+}
+function saveExpenses(){ return save(); }
+async function exportBackup(){
+  try {
+    const backup = navigator.locks
+      ? await navigator.locks.request("coachcontrol-data-write", {mode:"shared"}, () => dataStore.exportBackup())
+      : dataStore.exportBackup();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url; link.download = "coachcontrol-backup-" + new Date().toISOString().replace(/[:.]/g,"-") + ".json";
+    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch(error) { alert("Не удалось экспортировать данные: " + error.message + ". Не очищайте хранилище браузера."); }
+}
 function findIndexById(id){return students.findIndex(s=>s.id===id);}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 
@@ -858,39 +894,8 @@ function expensesForMonth(mi){
   return expenses.filter(e=>Number(e.month)===mi).reduce((a,e)=>a+(Number(e.amount)||0),0);
 }
 
-/* migrate */
-(function migrate(){
-  const nowMonth=new Date().getMonth();
-  students=students.map(s=>{
-    const id=s.id||uid();
-    const group=s.group||"Детская";
-    const parent=s.parent||"";
-    const phone=s.phone||"";
-    const name=s.name||s.student||"";
-    const rate=Number(s.rate||3000);
-    let payments=(s.payments && typeof s.payments==="object")?s.payments:{};
-
-    if(typeof s.paid==="boolean"){
-      payments[nowMonth]=s.paid?3000:0;
-    }
-    Object.keys(payments).forEach(k=>{
-      const raw=payments[k];
-      if(raw && typeof raw === "object" && "amount" in raw){
-        payments[k] = { amount: Number(raw.amount)||0, date: (raw.date||"") };
-      } else if(raw === true){
-        payments[k] = { amount: 3000, date: "" };
-      } else if(raw === false){
-        payments[k] = { amount: 0, date: "" };
-      } else {
-        payments[k] = { amount: Number(raw)||0, date: "" };
-      }
-    });
-
-    return {id, group, parent, phone, name, rate, payments};
-  });
-  save();
-})();
-
+/* Legacy records are normalized in memory only. No year or month is inferred.
+   The original keys remain untouched; the first explicit edit creates a backup. */
 /* chips */
 function setGroupFilter(f){
   groupFilter=f;
@@ -1156,7 +1161,7 @@ function renderExpenses(){
     return;
   }
 
-  const groups = {};
+  const groups = Object.create(null);
   expList.forEach(e=>{
     const title = (e.category || "Другое").trim();
     const key = title.toLowerCase();
@@ -1211,9 +1216,10 @@ function openExpenseDetails(key, title){
               ${esc(e.note||"Без комментария")}
             </div>
           </div>
-          <button class="btn danger mini" onclick="deleteExpense('${e.id}')">Удалить</button>
+          <button class="btn danger mini">Удалить</button>
         </div>
       `;
+      row.querySelector("button").onclick = () => deleteExpense(e.id);
       list.appendChild(row);
     });
   }
@@ -1223,11 +1229,11 @@ function openExpenseDetails(key, title){
 function closeExpenseDetails(){
   document.getElementById("modalExpDetails").classList.add("hidden");
 }
-function deleteExpense(id){
+async function deleteExpense(id){
   const index = expenses.findIndex(e=>e.id===id);
   if(index===-1) return;
   expenses.splice(index,1);
-  saveExpenses();
+  if(!await saveExpenses()){ render(); return; }
   // остаёмся в деталях — просто перерисуем список
   closeExpenseDetails();
   render();
@@ -1257,7 +1263,7 @@ function openAdd(){
 }
 function closeAdd(){ document.getElementById("modalAdd").classList.add("hidden"); }
 
-function saveNewStudent(){
+async function saveNewStudent(){
   const g=modalAdd.dataset.addGroup||"Детская";
   const parent=document.getElementById("addParentName").value.trim();
   const phone=document.getElementById("addPhone").value.trim();
@@ -1269,7 +1275,7 @@ function saveNewStudent(){
   if(!phone) return alert("Заполните телефон.");
 
   students.push({id:uid(), group:g, parent:(g==="Детская"?parent:""), phone, name, rate, payments:{}});
-  save();
+  if(!await save()){ render(); return; }
   closeAdd();
 
   document.getElementById("addParentName").value="";
@@ -1375,7 +1381,7 @@ function openPay(id){
 
   document.getElementById("modalPay").classList.remove("hidden");
 }
-function applyPay(){
+async function applyPay(){
   const i=findIndexById(payId); if(i===-1){closePay();return;}
   const mi=Number(document.getElementById("payMonthSelect").value);
   const sel=document.getElementById("payAmountSelect").value;
@@ -1395,11 +1401,15 @@ function applyPay(){
     if(!payDate) payDate=new Date().toISOString().slice(0,10);
   } else payDate="";
 
+  const previousPayment = getPaymentEntry(students[i], mi);
+  if(Object.prototype.hasOwnProperty.call(students[i].payments || {}, mi) &&
+     (previousPayment.amount !== val || previousPayment.date !== payDate) &&
+     !confirm("За этот месяц уже есть запись. Год старых платежей не определён. Изменить запись? Предыдущая версия будет сохранена в резервной копии.")) return;
   setPaymentEntry(students[i], mi, val, payDate);
   if(remember && (val===1500 || val===3000)) students[i].rate=val;
 
   monthIndex=mi;
-  save();
+  if(!await save()){ render(); return; }
   closePay();
   render();
 }
@@ -1434,7 +1444,7 @@ function openEdit(id){
 
   document.getElementById("modalEdit").classList.remove("hidden");
 }
-function saveEdit(){
+async function saveEdit(){
   const i=findIndexById(editId); if(i===-1){closeEdit();return;}
 
   const g=document.getElementById("editGroup").value;
@@ -1453,7 +1463,7 @@ function saveEdit(){
   students[i].parent=(g==="Детская")?parent:"";
   students[i].rate=rate;
 
-  save();
+  if(!await save()){ render(); return; }
   closeEdit();
   render();
 }
@@ -1469,10 +1479,10 @@ function openDelete(id){
   document.getElementById("deletePrompt").innerHTML=`Удалить ученика <b>${esc(students[i].name)}</b>?`;
   document.getElementById("modalDelete").classList.remove("hidden");
 }
-function confirmDelete(){
+async function confirmDelete(){
   const i=findIndexById(delId); if(i===-1){closeDelete();return;}
   students.splice(i,1);
-  save();
+  if(!await save()){ render(); return; }
   closeDelete();
   render();
 }
@@ -1488,7 +1498,7 @@ function openExpense(){
   document.getElementById("expNote").value="";
 }
 function closeExpense(){ document.getElementById("modalExp").classList.add("hidden"); }
-function saveExpense(){
+async function saveExpense(){
   const m=Number(document.getElementById("expMonth").value);
   const amount=Number(document.getElementById("expAmount").value);
   const category=document.getElementById("expCategory").value.trim();
@@ -1498,7 +1508,7 @@ function saveExpense(){
   if(!category) return alert("Введите категорию (например: аренда).");
 
   expenses.push({id:uid(), month:m, amount, category, note, ts:Date.now()});
-  saveExpenses();
+  if(!await saveExpenses()){ render(); return; }
   monthIndex=m;
   closeExpense();
   render();
@@ -1542,6 +1552,15 @@ function closeAll(){
 }
 
 /* INIT */
+if(dataStore.blocked){
+  const warning = document.createElement("p");
+  warning.setAttribute("role", "alert");
+  warning.textContent = "Данные не загружены: " + dataStore.error + " Запись заблокирована. Исходные записи сохранены; экспортируйте резервную копию JSON.";
+  document.querySelector("#appScreen > .container").prepend(warning);
+  window.addEventListener("load", () => alert("Данные не загружены. Запись заблокирована, исходные записи не изменены. " + dataStore.error + " Экспортируйте резервную копию JSON; не очищайте браузер."));
+}
+// Web Locks serialize writes; the store also rejects stale snapshots.
+
 setTab("Детская");
 setGroupFilter("all");
 closeAll();
