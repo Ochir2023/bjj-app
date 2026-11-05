@@ -51,11 +51,71 @@
     });
   }
   function group(f, name) {
-    let g = f.groups.find((g) => g.name === name);
+    let g = f.groups.find((g) => g.name === name || g.aliases?.includes(name));
     if (!g) {
       g = { id: id(), name };
       f.groups.push(g);
     }
+    return g;
+  }
+  function addGroup(f, name, requiresParent = false) {
+    name = String(name).trim();
+    assert(name && name.length <= 80, "Название группы: от 1 до 80 символов.");
+    assert(
+      !f.groups.some((g) =>
+        [g.name, ...(g.aliases || [])].some(
+          (n) => n.toLocaleLowerCase("ru") === name.toLocaleLowerCase("ru"),
+        ),
+      ),
+      "Такое название уже используется, в том числе в архиве.",
+    );
+    const g = {
+      id: id(),
+      name,
+      aliases: [],
+      archived: false,
+      requiresParent: !!requiresParent,
+    };
+    f.groups.push(g);
+    event(f, "group", "create", null, g);
+    return g;
+  }
+  function renameGroup(f, groupId, name) {
+    const g = f.groups.find((g) => g.id === groupId && !g.archived);
+    assert(g, "Активная группа не найдена.");
+    name = String(name).trim();
+    assert(name && name.length <= 80, "Название группы: от 1 до 80 символов.");
+    assert(
+      !f.groups.some(
+        (other) =>
+          other.id !== groupId &&
+          [other.name, ...(other.aliases || [])].some(
+            (n) => n.toLocaleLowerCase("ru") === name.toLocaleLowerCase("ru"),
+          ),
+      ),
+      "Название уже используется.",
+    );
+    const before = copy(g);
+    g.requiresParent =
+      g.requiresParent ??
+      (g.name === "Детская" || g.aliases?.includes("Детская") || false);
+    g.aliases = [...new Set([...(g.aliases || []), g.name])].filter(
+      (n) => n !== name,
+    );
+    g.name = name;
+    event(f, "group", "rename", before, g);
+    return g;
+  }
+  function archiveGroup(f, groupId) {
+    const g = f.groups.find((g) => g.id === groupId && !g.archived);
+    assert(g, "Активная группа не найдена.");
+    assert(
+      !f.profiles.some((p) => p.groupId === groupId && !p.archived),
+      "Сначала переведите или архивируйте активных учеников.",
+    );
+    const before = copy(g);
+    g.archived = true;
+    event(f, "group", "archive", before, g);
     return g;
   }
   function tariffAmount(f, amountCents) {
@@ -244,6 +304,9 @@
         (o) => !o.voided && o.studentId === studentId && o.period === p,
       ),
       signed,
+      addGroup,
+      renameGroup,
+      archiveGroup,
     );
     const noShow = f.attendance.some(
       (a) =>
@@ -482,6 +545,9 @@
           (!groupId || o.groupId === groupId),
       ),
       signed,
+      addGroup,
+      renameGroup,
+      archiveGroup,
     );
     const expenses = sum(
       f.expenses.filter(
@@ -673,6 +739,31 @@
     f.groups.forEach((g) =>
       assert(typeof g.name === "string" && g.name, "Некорректная группа."),
     );
+    const names = new Map();
+    f.groups.forEach((g) => {
+      assert(
+        g.archived === undefined || typeof g.archived === "boolean",
+        "Некорректный архив группы.",
+      );
+      assert(
+        g.requiresParent === undefined || typeof g.requiresParent === "boolean",
+        "Некорректный тип группы.",
+      );
+      assert(
+        g.aliases === undefined ||
+          (Array.isArray(g.aliases) &&
+            g.aliases.every((n) => typeof n === "string" && n.trim())),
+        "Некорректные прежние названия.",
+      );
+      for (const name of [g.name, ...(g.aliases || [])]) {
+        const key = name;
+        assert(
+          !names.has(key) || names.get(key) === g.id,
+          "Неоднозначное название группы.",
+        );
+        names.set(key, g.id);
+      }
+    });
     f.tariffs.forEach((t) =>
       assert(money(t.amountCents), "Некорректный тариф."),
     );
@@ -838,9 +929,15 @@
     report,
     resolveLegacy,
     signed,
+    addGroup,
+    renameGroup,
+    archiveGroup,
   };
   // Public mutations are transactional in memory, including failed legacy reconciliation.
   for (const name of [
+    "addGroup",
+    "renameGroup",
+    "archiveGroup",
     "syncStudents",
     "ensureCharge",
     "addPayment",
