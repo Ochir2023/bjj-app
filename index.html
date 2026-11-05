@@ -79,6 +79,8 @@
         <div class="small">Тариф по умолчанию</div>
         <select id="addRate">
           <option value="3000">3000 ₽</option>
+          <option value="2500">2500 ₽</option>
+          <option value="2000">2000 ₽</option>
           <option value="1500">1500 ₽</option>
         </select>
       </div>
@@ -140,6 +142,8 @@
           <div class="small">Статус</div>
           <select id="payAmountSelect" onchange="onPayTypeChange()">
             <option value="3000">Платёж 3000 ₽</option>
+            <option value="2500">Платёж 2500 ₽</option>
+            <option value="2000">Платёж 2000 ₽</option>
             <option value="1500">Платёж 1500 ₽</option>
             <option value="custom">Вписать сумму вручную…</option>
             <option value="-1">Не ходил</option>
@@ -174,7 +178,7 @@
       <div style="margin-top:10px;">
         <label class="small" style="display:flex;gap:10px;align-items:center;">
           <input type="checkbox" id="rememberRate" style="width:auto" />
-          Запомнить 1500/3000 для будущих начислений (старые начисления не меняются)
+          Запомнить выбранный тариф для будущих начислений (старые начисления не меняются)
         </label>
       </div>
 
@@ -220,6 +224,8 @@
         <div class="small">Тариф по умолчанию</div>
         <select id="editRate">
           <option value="3000">3000 ₽</option>
+          <option value="2500">2500 ₽</option>
+          <option value="2000">2000 ₽</option>
           <option value="1500">1500 ₽</option>
         </select>
       </div>
