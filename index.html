@@ -586,23 +586,6 @@ async function saveEdit(){
   if(!name) return alert("Заполните ФИО.");
   if(groupNeedsParent(g) && !parent) return alert("Для детской нужно ФИО родителя.");
 
-  // An existing monthly charge does not change silently when a tariff changes.
-  const existingCharge = finance.charges.find(
-    c => c.studentId === editId &&
-      c.period === String(yearIndex).padStart(4,"0") + "-" + String(monthIndex+1).padStart(2,"0")
-  );
-  const previousRate = students[i].rateCents ?? ((students[i].rate ?? 3000)*100);
-  const updateCurrentCharge =
-    previousRate !== rate*100 && existingCharge &&
-    existingCharge.amountCents !== rate*100 &&
-    confirm("За выбранный месяц уже начислено " + rubles(existingCharge.amountCents) +
-      ", новый тариф " + rate + " ₽. Исправить начисление за этот месяц? Прошлые месяцы не изменятся.");
-  if(updateCurrentCharge){
-    try {
-      CoachFinance.correctCharge(finance,editId,existingCharge.period,rate*100,
-        "Подтверждённое исправление начисления при смене тарифа");
-    } catch(error){ alert(error.message); return; }
-  }
   students[i].group=g;
   students[i].phone=phone;
   students[i].name=name;
