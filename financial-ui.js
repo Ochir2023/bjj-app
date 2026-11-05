@@ -225,8 +225,15 @@ function openPay(id) {
   fillMonthSelect(document.getElementById("payMonthSelect"), monthIndex);
   document.getElementById("payYear").value = yearIndex;
   document.getElementById("payDateInput").value = localDate();
-  document.getElementById("payAmountSelect").value = "3000";
-  document.getElementById("payCustomInput").value = "";
+  const currentStudent = students.find((s) => s.id === id);
+  const currentRate = currentStudent?.rateCents ?? 300000;
+  const rateSelect = document.getElementById("payAmountSelect");
+  const rateValue = String(currentRate / 100);
+  rateSelect.value = [...rateSelect.options].some((option) => option.value === rateValue)
+    ? rateValue : "custom";
+  document.getElementById("payCustomInput").value =
+    rateSelect.value === "custom" ? (currentRate / 100).toFixed(2) : "";
+
   document.getElementById("payReason").value = "";
   document.getElementById("rememberRate").checked = false;
   document.getElementById("payOperation").disabled = false;
@@ -306,7 +313,28 @@ async function applyPay() {
       [150000, 200000, 250000, 300000].includes(amountCents)
     )
       rememberedStudent.rateCents = amountCents;
+    const currentStudent = students.find((s) => s.id === studentId);
+    const oldCharge = finance.charges.find(
+      (c) => c.studentId === studentId && c.period === p,
+    );
+    const alignCharge =
+      !financialEditPaymentId &&
+      operation === "payment" &&
+      amountCents > 0 &&
+      oldCharge &&
+      currentStudent &&
+      oldCharge.amountCents !== currentStudent.rateCents &&
+      amountCents === currentStudent.rateCents &&
+      confirm(
+        `У ученика тариф ${rubles(currentStudent.rateCents)}, но за ${p} ранее начислено ${rubles(oldCharge.amountCents)}. Исправить начисление на ${rubles(currentStudent.rateCents)}? Изменение сохранится в журнале.`,
+      );
     const ok = await financialAction((f) => {
+      if (alignCharge) {
+        Ledger.correctCharge(
+          f, studentId, p, currentStudent.rateCents,
+          "Подтверждённое исправление начисления по выбранному тарифу",
+        );
+      }
       if (financialEditPaymentId) {
         if (!amountCents)
           throw Error("Для исправления нужна положительная сумма.");
