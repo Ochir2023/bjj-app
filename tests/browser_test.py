@@ -58,6 +58,20 @@ class BrowserTests(unittest.TestCase):
         self.page.locator('#modalAdd button:has-text("Сохранить")').click()
         self.page.wait_for_function('document.getElementById("modalAdd").classList.contains("hidden")')
 
+    def test_student_age_weight(self):
+        self.login()
+        self.add()
+        self.page.evaluate('openEdit(students[0].id)')
+        self.page.fill('#editBirthDate','2000-11-07')
+        self.page.fill('#editWeightKg','70.5')
+        self.page.locator('#modalEdit button:has-text("Сохранить")').click()
+        self.page.wait_for_function('document.getElementById("modalEdit").classList.contains("hidden")')
+        self.assertEqual(self.page.evaluate('studentAge("2000-11-07",new Date(2026,10,6))'),25)
+        self.assertEqual(self.page.evaluate('studentAge("2000-11-07",new Date(2026,10,7))'),26)
+        self.page.reload()
+        self.assertEqual(self.page.evaluate('students[0].weightKg'),70.5)
+        self.assertEqual(self.page.evaluate('students[0].birthDate'),'2000-11-07')
+
     def test_students_groups_edit_search_and_filters(self):
         self.login()
         for group in ['Детская','Взрослая','Женская']: self.add(group+' ученик',group)
