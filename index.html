@@ -74,6 +74,10 @@
         <div class="small" id="addNameLabel">ФИО ученика</div>
         <input id="addStudentName" placeholder="ФИО" />
       </div>
+      <div class="row" style="margin-top:10px;gap:10px;">
+        <label style="flex:1;min-width:0;"><span class="small">Дата рождения</span><input id="addBirthDate" type="date" autocomplete="bday" /></label>
+        <label style="flex:1;min-width:0;"><span class="small">Вес, кг</span><input id="addWeightKg" type="number" min="0.1" max="500" step="0.1" inputmode="decimal" placeholder="Например, 32.5" /></label>
+      </div>
 
       <div style="margin-top:10px;">
         <div class="small">Тариф по умолчанию</div>
@@ -106,6 +110,9 @@
         </div>
         <div class="kv" style="margin-top:6px;"><span class="label">Телефон:</span> <span id="infoPhone"></span></div>
         <div class="kv" style="margin-top:6px;"><span class="label">Тариф:</span> <span id="infoRate"></span></div>
+        <div class="kv" style="margin-top:6px;"><span class="label">Дата рождения:</span> <span id="infoBirthDate"></span></div>
+        <div class="kv" style="margin-top:6px;"><span class="label">Возраст:</span> <span id="infoAge"></span></div>
+        <div class="kv" style="margin-top:6px;"><span class="label">Вес:</span> <span id="infoWeightKg"></span></div>
         <div style="margin-top:10px;">
           <span class="status" id="infoStatusBadge"></span>
         </div>
@@ -218,6 +225,10 @@
       <div style="margin-top:10px;">
         <div class="small">ФИО ученика/спортсмена</div>
         <input id="editName" placeholder="ФИО" />
+      </div>
+      <div class="row" style="margin-top:10px;gap:10px;">
+        <label style="flex:1;min-width:0;"><span class="small">Дата рождения</span><input id="editBirthDate" type="date" autocomplete="bday" /></label>
+        <label style="flex:1;min-width:0;"><span class="small">Вес, кг</span><input id="editWeightKg" type="number" min="0.1" max="500" step="0.1" inputmode="decimal" placeholder="Например, 32.5" /></label>
       </div>
 
       <div style="margin-top:10px;">
@@ -490,6 +501,31 @@ function attachLongPress(el, id){
   });
 }
 
+function validBirthDate(value) {
+  if (!value) return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y,m,d] = value.split("-").map(Number);
+  const date = new Date(y,m-1,d);
+  if (date.getFullYear() !== y || date.getMonth() !== m-1 || date.getDate() !== d) return false;
+  const now = new Date();
+  const today = [now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
+  return value <= today && y >= 1900;
+}
+function studentAge(birthDate, today = new Date()) {
+  if (!birthDate || !validBirthDate(birthDate)) return null;
+  const [y,m,d] = birthDate.split("-").map(Number);
+  let age = today.getFullYear() - y;
+  if (today.getMonth()+1 < m || (today.getMonth()+1 === m && today.getDate() < d)) age--;
+  return age;
+}
+function weightValue(value) {
+  const text = String(value || "").trim().replace(",",".");
+  if (!text) return null;
+  const n = Number(text);
+  if (!/^\d+(?:\.\d)?$/.test(text) || !Number.isFinite(n) || n < 0.1 || n > 500) throw Error("Введите вес от 0,1 до 500 кг с точностью 0,1 кг.");
+  return n;
+}
+
 /* ADD */
 function closeAdd(){ document.getElementById("modalAdd").classList.add("hidden"); }
 
@@ -499,18 +535,24 @@ async function saveNewStudent(){
   const phone=document.getElementById("addPhone").value.trim();
   const name=document.getElementById("addStudentName").value.trim();
   const rate=Number(document.getElementById("addRate").value);
+  const birthDate=document.getElementById("addBirthDate").value;
+  let weightKg;
+  if(!validBirthDate(birthDate)) return alert("Укажите корректную дату рождения, не позже сегодняшнего дня.");
+  try { weightKg=weightValue(document.getElementById("addWeightKg").value); } catch(e) {return alert(e.message);}
 
   if(groupNeedsParent(g) && (!parent || !name)) return alert("Для детской: ФИО родителя и ученика.");
   if(!groupNeedsParent(g) && !name) return alert("Заполните ФИО спортсмена.");
   if(!phone) return alert("Заполните телефон.");
 
-  students.push({id:uid(), group:g, parent:(groupNeedsParent(g)?parent:""), phone, name, rateCents: rate * 100, payments:{}});
+  students.push({id:uid(), group:g, parent:(groupNeedsParent(g)?parent:""), phone, name, birthDate, weightKg, rateCents: rate * 100, payments:{}});
   if(!await save()){ render(); return; }
   closeAdd();
 
   document.getElementById("addParentName").value="";
   document.getElementById("addPhone").value="";
   document.getElementById("addStudentName").value="";
+  document.getElementById("addBirthDate").value="";
+  document.getElementById("addWeightKg").value="";
   document.getElementById("addRate").value="3000";
   render();
 }
@@ -527,6 +569,10 @@ function openInfo(id){
   document.getElementById("infoGroup").textContent=s.group||"";
   document.getElementById("infoPhone").textContent=s.phone||"";
   document.getElementById("infoRate").textContent=rubles(s.rateCents ?? ((s.rate ?? 3000)*100));
+  document.getElementById("infoBirthDate").textContent=s.birthDate ? s.birthDate.split("-").reverse().join(".") : "Не указана";
+  const calculatedAge=studentAge(s.birthDate);
+  document.getElementById("infoAge").textContent=calculatedAge===null ? "Не указан" : calculatedAge+" лет";
+  document.getElementById("infoWeightKg").textContent=s.weightKg == null ? "Не указан" : String(s.weightKg).replace(".",",")+" кг";
 
   const parentRow=document.getElementById("infoParentRow");
   if(groupNeedsParent(s.group)){
@@ -564,6 +610,8 @@ function openEdit(id){
   document.getElementById("editGroup").value=s.group;
   document.getElementById("editPhone").value=s.phone||"";
   document.getElementById("editName").value=s.name||"";
+  document.getElementById("editBirthDate").value=s.birthDate||"";
+  document.getElementById("editWeightKg").value=s.weightKg == null ? "" : String(s.weightKg);
   document.getElementById("editParentName").value=s.parent||"";
   document.getElementById("editRate").value=String((s.rateCents ?? ((s.rate ?? 3000)*100))/100);
 
@@ -581,6 +629,10 @@ async function saveEdit(){
   const name=document.getElementById("editName").value.trim();
   const parent=document.getElementById("editParentName").value.trim();
   const rate=Number(document.getElementById("editRate").value);
+  const birthDate=document.getElementById("editBirthDate").value;
+  let weightKg;
+  if(!validBirthDate(birthDate)) return alert("Укажите корректную дату рождения, не позже сегодняшнего дня.");
+  try { weightKg=weightValue(document.getElementById("editWeightKg").value); } catch(e) {return alert(e.message);}
 
   if(!phone) return alert("Заполните телефон.");
   if(!name) return alert("Заполните ФИО.");
@@ -591,6 +643,8 @@ async function saveEdit(){
   students[i].name=name;
   students[i].parent=(groupNeedsParent(g))?parent:"";
   students[i].rateCents=rate*100;
+  students[i].birthDate=birthDate;
+  students[i].weightKg=weightKg;
 
   if(!await save()){ render(); return; }
   closeEdit();

@@ -368,7 +368,12 @@ function renderStudentTiles(arr) {
       g = finance.groups.find((g) => g.id === profile?.groupId);
     const card = document.createElement("button");
     card.className = "tile";
-    card.innerHTML = `<span class="tile-left"><span class="avatar">${esc(initials(s.name))}</span><span style="min-width:0"><span class="tile-name">${esc(s.name)}</span><span class="tile-meta" style="display:block"><span class="badge ${b.fullyPaid ? "paid" : b.debt ? "debt" : "neutral"}">${b.fullyPaid ? "Оплатил" : b.debt ? "Не оплатил" : "Нет начисления"}</span>${b.noShow ? ' <span class="badge absent">Не ходил</span>' : ""}${b.debt ? `<span style="display:block;color:var(--danger)">Долг ${rubles(b.debt)}</span>` : ""}${b.credit ? `<span style="display:block">Переплата ${rubles(b.credit)}</span>` : ""}${currentScreen === "payments" && searchText ? `<span class="small" style="display:block">${esc(g?.name || "")}</span>` : ""}</span></span></span><span class="tile-right">${svg("right")}</span>`;
+    const age = studentAge(s.birthDate);
+    const personalDetails = [
+      age === null ? "" : age + " лет",
+      s.weightKg == null ? "" : String(s.weightKg).replace(".", ",") + " кг"
+    ].filter(Boolean).join(" · ");
+    card.innerHTML = `<span class="tile-left"><span class="avatar">${esc(initials(s.name))}</span><span style="min-width:0"><span class="tile-name">${esc(s.name)}</span>${personalDetails ? `<span class="small" style="display:block">${esc(personalDetails)}</span>` : ""}<span class="tile-meta" style="display:block"><span class="badge ${b.fullyPaid ? "paid" : b.debt ? "debt" : "neutral"}">${b.fullyPaid ? "Оплатил" : b.debt ? "Не оплатил" : "Нет начисления"}</span>${b.noShow ? ' <span class="badge absent">Не ходил</span>' : ""}${b.debt ? `<span style="display:block;color:var(--danger)">Долг ${rubles(b.debt)}</span>` : ""}${b.credit ? `<span style="display:block">Переплата ${rubles(b.credit)}</span>` : ""}${currentScreen === "payments" && searchText ? `<span class="small" style="display:block">${esc(g?.name || "")}</span>` : ""}</span></span></span><span class="tile-right">${svg("right")}</span>`;
     bindStudentCard(card, s.id);
     list.appendChild(card);
   });
