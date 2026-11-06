@@ -24,7 +24,7 @@
       }
       if (s.birthDate !== undefined && s.birthDate !== "" && (
         typeof s.birthDate !== "string" ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(s.birthDate) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(s.birthDate) ||
         !Number.isFinite(Date.parse(s.birthDate)) ||
         new Date(s.birthDate + "T00:00:00Z").toISOString().slice(0,10) !== s.birthDate
       )) throw Error("Некорректная дата рождения.");
