@@ -22,6 +22,16 @@
         if (s[key] !== undefined && typeof s[key] !== "string")
           throw Error("Некорректное поле ученика: " + key);
       }
+      if (s.birthDate !== undefined && s.birthDate !== "" && (
+        typeof s.birthDate !== "string" ||
+        !/^\\d{4}-\\d{2}-\\d{2}$/.test(s.birthDate) ||
+        !Number.isFinite(Date.parse(s.birthDate)) ||
+        new Date(s.birthDate + "T00:00:00Z").toISOString().slice(0,10) !== s.birthDate
+      )) throw Error("Некорректная дата рождения.");
+      if (s.weightKg !== undefined && s.weightKg !== null &&
+        (typeof s.weightKg !== "number" || !Number.isFinite(s.weightKg) ||
+         s.weightKg < 0.1 || s.weightKg > 500))
+        throw Error("Некорректный вес ученика.");
       if (s.id && ids.has(s.id))
         throw Error("Повторяющийся идентификатор ученика.");
       if (s.id) ids.add(s.id);
