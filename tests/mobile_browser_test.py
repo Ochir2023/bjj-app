@@ -34,6 +34,31 @@ class MobileBrowserTests(unittest.TestCase):
         self.page.get_by_role('button',name='Открыть меню',exact=True).click()
         self.page.locator('#drawer').get_by_role('button',name=name,exact=True).click()
 
+    def test_competition_roster_selection_persists_and_export(self):
+        self.login()
+        self.add()
+        self.page.evaluate('openEdit(students[0].id)')
+        self.page.fill('#editBirthDate','2016-11-09')
+        self.page.fill('#editWeightKg','33.5')
+        self.page.locator('#modalEdit button:has-text("Сохранить")').click()
+        self.page.wait_for_function('document.getElementById("modalEdit").classList.contains("hidden")')
+        self.page.evaluate('navigate("competition")')
+        self.page.fill('#competitionDate','2026-11-10')
+        self.page.locator('#competitionDate').dispatch_event('change')
+        self.page.get_by_role('checkbox',name='Участник: Тестовый ученик').check()
+        self.page.wait_for_function('students[0].competitionSelected===true')
+        self.page.reload()
+        self.page.evaluate('navigate("competition")')
+        self.assertTrue(self.page.get_by_role('checkbox',name='Участник: Тестовый ученик').is_checked())
+        self.assertIn('33,5 кг',self.page.locator('#list').inner_text())
+        with self.page.expect_download() as dl:
+            self.page.get_by_role('button',name='Скачать заявку CSV').click()
+        content=dl.value.path().read_text(encoding='utf-8-sig')
+        self.assertIn('Тестовый ученик',content)
+        self.assertIn('Тестовый родитель',content)
+        self.assertIn('33,5',content)
+        self.assertIn('ФИО родителя',content)
+
     def test_dashboard_is_first_screen_and_quick_actions_work(self):
         self.login();self.assertEqual(self.page.evaluate('currentScreen'),'home')
         self.assertEqual(self.page.locator('h1').inner_text(),'Обзор финансов')
