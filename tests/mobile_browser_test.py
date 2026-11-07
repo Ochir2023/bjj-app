@@ -61,6 +61,20 @@ class MobileBrowserTests(unittest.TestCase):
         self.assertIn('33,5',content)
         self.assertIn('ФИО родителя',content)
 
+    def test_group_coach_assignment_is_in_club_report(self):
+        self.login()
+        self.page.evaluate('openGroupForm(finance.groups[0].id)')
+        self.page.fill('#groupCoachName','Тестовый тренер')
+        self.page.locator('#financialModal button:has-text("Сохранить группу")').click()
+        self.page.wait_for_function('!document.getElementById("financialModal")')
+        self.page.evaluate('navigate("club")')
+        self.assertIn('Тестовый тренер',self.page.locator('#list').inner_text())
+        self.page.reload()
+        self.page.fill('#pinInput','1234')
+        self.page.click('button:has-text("Войти")')
+        self.page.evaluate('navigate("club")')
+        self.assertIn('Тестовый тренер',self.page.locator('#list').inner_text())
+
     def test_dashboard_is_first_screen_and_quick_actions_work(self):
         self.login();self.assertEqual(self.page.evaluate('currentScreen'),'home')
         self.assertEqual(self.page.locator('h1').inner_text(),'Обзор финансов')
