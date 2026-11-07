@@ -38,6 +38,8 @@ const screenNames = {
   backup: "Резервная копия",
   settings: "Настройки",
   pro: "CoachControl PRO",
+  competition: "Соревнования",
+  club: "Руководителю",
 };
 const plural = (n, one, few, many) =>
   n % 10 === 1 && n % 100 !== 11
@@ -140,7 +142,7 @@ function render() {
   if (!document.getElementById("screenTools")) return;
   updateHeader();
   const isPeople = ["group", "payments"].includes(currentScreen),
-    isFinance = ["home", "group", "payments", "expenses"].includes(
+    isFinance = ["home", "group", "payments", "expenses", "club"].includes(
       currentScreen,
     );
   document.getElementById("periodBar").classList.toggle("hidden", !isFinance);
@@ -194,6 +196,8 @@ function render() {
   else if (currentScreen === "group") renderGroup(tools, list);
   else if (currentScreen === "payments") renderPaymentTiles();
   else if (currentScreen === "expenses") renderExpenses();
+  else if (currentScreen === "competition") renderCompetition(tools, list);
+  else if (currentScreen === "club") renderClubAnalytics(tools, list);
   else renderUtility(tools);
   renderNav();
 }
@@ -282,6 +286,8 @@ function renderDashboard() {
   util.className = "utility-actions";
   button(util, "Начислить за период", createPeriodCharges);
   button(util, "Без определённого года", openLegacy);
+  button(util, "Заявка на соревнования", () => navigate("competition"));
+  button(util, "Статистика клуба", () => navigate("club"));
   box.appendChild(util);
 }
 function renderGroups(tools, list) {
@@ -854,6 +860,8 @@ function initDrawer() {
     ["groups", "Группы"],
     ["payments", "Оплата"],
     ["expenses", "Расходы"],
+    ["competition", "Соревнования"],
+    ["club", "Руководителю"],
     ["export", "Экспорт"],
     ["backup", "Резервная копия"],
     ["settings", "Настройки"],
