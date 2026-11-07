@@ -48,6 +48,8 @@ class MobileBrowserTests(unittest.TestCase):
         self.page.get_by_role('checkbox',name='Участник: Тестовый ученик').check()
         self.page.wait_for_function('students[0].competitionSelected===true')
         self.page.reload()
+        self.page.fill('#pinInput','1234')
+        self.page.click('button:has-text("Войти")')
         self.page.evaluate('navigate("competition")')
         self.assertTrue(self.page.get_by_role('checkbox',name='Участник: Тестовый ученик').is_checked())
         self.assertIn('33,5 кг',self.page.locator('#list').inner_text())
