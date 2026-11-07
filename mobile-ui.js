@@ -38,6 +38,8 @@ const screenNames = {
   backup: "Резервная копия",
   settings: "Настройки",
   pro: "CoachControl PRO",
+  competition: "Соревнования",
+  club: "Руководителю",
 };
 const plural = (n, one, few, many) =>
   n % 10 === 1 && n % 100 !== 11
@@ -140,7 +142,7 @@ function render() {
   if (!document.getElementById("screenTools")) return;
   updateHeader();
   const isPeople = ["group", "payments"].includes(currentScreen),
-    isFinance = ["home", "group", "payments", "expenses"].includes(
+    isFinance = ["home", "group", "payments", "expenses", "club"].includes(
       currentScreen,
     );
   document.getElementById("periodBar").classList.toggle("hidden", !isFinance);
@@ -194,6 +196,8 @@ function render() {
   else if (currentScreen === "group") renderGroup(tools, list);
   else if (currentScreen === "payments") renderPaymentTiles();
   else if (currentScreen === "expenses") renderExpenses();
+  else if (currentScreen === "competition") renderCompetition(tools, list);
+  else if (currentScreen === "club") renderClubAnalytics(tools, list);
   else renderUtility(tools);
   renderNav();
 }
@@ -282,6 +286,8 @@ function renderDashboard() {
   util.className = "utility-actions";
   button(util, "Начислить за период", createPeriodCharges);
   button(util, "Без определённого года", openLegacy);
+  button(util, "Заявка на соревнования", () => navigate("competition"));
+  button(util, "Статистика клуба", () => navigate("club"));
   box.appendChild(util);
 }
 function renderGroups(tools, list) {
@@ -775,8 +781,9 @@ function openGroupForm(id = null) {
   const g = finance.groups.find((g) => g.id === id),
     content = modal(g ? "Настройки группы" : "Новая группа");
   content.innerHTML =
-    '<label for="groupName">Название группы</label><input id="groupName" maxlength="80" autocomplete="off" /><label id="groupParentLabel"><input id="groupRequiresParent" type="checkbox" /> Контакт родителя обязателен</label>';
+    '<label for="groupName">Название группы</label><input id="groupName" maxlength="80" autocomplete="off" /><label for="groupCoachName">ФИО тренера группы</label><input id="groupCoachName" maxlength="120" autocomplete="off" /><label id="groupParentLabel"><input id="groupRequiresParent" type="checkbox" /> Контакт родителя обязателен</label>';
   document.getElementById("groupName").value = g?.name || "";
+  document.getElementById("groupCoachName").value = g?.coachName || "";
   document.getElementById("groupRequiresParent").checked = g
     ? groupNeedsParent(g.name)
     : false;
@@ -790,6 +797,7 @@ function openGroupForm(id = null) {
       const ok = await financialAction((f) => {
         if (g) {
           Ledger.renameGroup(f, id, name);
+          Ledger.setGroupCoach(f, id, document.getElementById("groupCoachName").value);
           const ids = f.profiles
             .filter((p) => p.groupId === id)
             .map((p) => p.studentId);
@@ -797,11 +805,14 @@ function openGroupForm(id = null) {
             if (ids.includes(s.id)) s.group = name;
           });
         } else
-          savedId = Ledger.addGroup(
-            f,
-            name,
-            document.getElementById("groupRequiresParent").checked,
-          ).id;
+          {
+            savedId = Ledger.addGroup(
+              f,
+              name,
+              document.getElementById("groupRequiresParent").checked,
+            ).id;
+            Ledger.setGroupCoach(f, savedId, document.getElementById("groupCoachName").value);
+          }
       });
       if (ok) {
         closeFinancialModal();
@@ -854,6 +865,8 @@ function initDrawer() {
     ["groups", "Группы"],
     ["payments", "Оплата"],
     ["expenses", "Расходы"],
+    ["competition", "Соревнования"],
+    ["club", "Руководителю"],
     ["export", "Экспорт"],
     ["backup", "Резервная копия"],
     ["settings", "Настройки"],

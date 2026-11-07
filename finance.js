@@ -106,6 +106,17 @@
     event(f, "group", "rename", before, g);
     return g;
   }
+  function setGroupCoach(f, groupId, coachName) {
+    const g = f.groups.find((g) => g.id === groupId && !g.archived);
+    assert(g, "Группа не найдена.");
+    const name = String(coachName ?? "").trim();
+    assert(name.length <= 120, "ФИО тренера не должно превышать 120 символов.");
+    if ((g.coachName || "") === name) return g;
+    const before = copy(g);
+    g.coachName = name;
+    event(f, "group", "setCoach", before, g, "Назначен тренер группы");
+    return g;
+  }
   function archiveGroup(f, groupId) {
     const g = f.groups.find((g) => g.id === groupId && !g.archived);
     assert(g, "Активная группа не найдена.");
@@ -767,6 +778,10 @@
             g.aliases.every((n) => typeof n === "string" && n.trim())),
         "Некорректные прежние названия.",
       );
+      assert(
+        g.coachName === undefined || (typeof g.coachName === "string" && g.coachName.length <= 120),
+        "Некорректное ФИО тренера.",
+      );
       for (const name of [g.name, ...(g.aliases || [])]) {
         const key = name;
         assert(
@@ -945,12 +960,14 @@
     addGroup,
     renameGroup,
     archiveGroup,
+    setGroupCoach,
   };
   // Public mutations are transactional in memory, including failed legacy reconciliation.
   for (const name of [
     "addGroup",
     "renameGroup",
     "archiveGroup",
+    "setGroupCoach",
     "syncStudents",
     "ensureCharge",
     "correctCharge",

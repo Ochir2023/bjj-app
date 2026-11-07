@@ -18,6 +18,7 @@ jobs:
       - run: node tests/data-store.test.cjs
       - run: node tests/finance.test.cjs
       - run: node tests/groups.test.cjs
+      - run: node tests/competition.test.cjs
       - run: python -m pip install -r requirements-test.txt
       - run: python -m playwright install --with-deps chromium
       - run: python tests/browser_test.py

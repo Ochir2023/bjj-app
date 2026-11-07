@@ -1,5 +1,5 @@
 /* Versioned complete shell. Never writes or removes localStorage/financial data. */
-const CACHE_NAME = "coachcontrol-shell-v5";
+const CACHE_NAME = "coachcontrol-shell-v6";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const ASSETS = [
   "./data-store.js",
   "./financial-ui.js",
   "./mobile-ui.js",
+  "./competition.js",
   "./mobile-ui.css",
   "./icons/app-icon.svg",
   "./icons/icon-180.png",

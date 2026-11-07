@@ -32,6 +32,8 @@
         (typeof s.weightKg !== "number" || !Number.isFinite(s.weightKg) ||
          s.weightKg < 0.1 || s.weightKg > 500))
         throw Error("Некорректный вес ученика.");
+      if (s.competitionSelected !== undefined && typeof s.competitionSelected !== "boolean")
+        throw Error("Некорректная отметка участника соревнований.");
       if (s.id && ids.has(s.id))
         throw Error("Повторяющийся идентификатор ученика.");
       if (s.id) ids.add(s.id);
