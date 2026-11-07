@@ -138,7 +138,7 @@ function renderClubAnalytics(tools,list) {
     const tile=document.createElement("div");tile.className="card";
     const title=document.createElement("strong");title.textContent=g.name;
     const info=document.createElement("p");info.className="small";
-    info.textContent="Учеников: "+membersOf(g.id).length+" · начислено: "+rubles(r.charged)+
+    info.textContent="Тренер: "+(g.coachName || "не назначен")+" · Учеников: "+membersOf(g.id).length+" · начислено: "+rubles(r.charged)+
       " · платежи: "+rubles(r.received)+" · задолженность: "+rubles(r.debt);
     tile.appendChild(title);tile.appendChild(info);list.appendChild(tile);
   }
