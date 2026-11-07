@@ -781,8 +781,9 @@ function openGroupForm(id = null) {
   const g = finance.groups.find((g) => g.id === id),
     content = modal(g ? "Настройки группы" : "Новая группа");
   content.innerHTML =
-    '<label for="groupName">Название группы</label><input id="groupName" maxlength="80" autocomplete="off" /><label id="groupParentLabel"><input id="groupRequiresParent" type="checkbox" /> Контакт родителя обязателен</label>';
+    '<label for="groupName">Название группы</label><input id="groupName" maxlength="80" autocomplete="off" /><label for="groupCoachName">ФИО тренера группы</label><input id="groupCoachName" maxlength="120" autocomplete="off" /><label id="groupParentLabel"><input id="groupRequiresParent" type="checkbox" /> Контакт родителя обязателен</label>';
   document.getElementById("groupName").value = g?.name || "";
+  document.getElementById("groupCoachName").value = g?.coachName || "";
   document.getElementById("groupRequiresParent").checked = g
     ? groupNeedsParent(g.name)
     : false;
@@ -796,6 +797,7 @@ function openGroupForm(id = null) {
       const ok = await financialAction((f) => {
         if (g) {
           Ledger.renameGroup(f, id, name);
+          Ledger.setGroupCoach(f, id, document.getElementById("groupCoachName").value);
           const ids = f.profiles
             .filter((p) => p.groupId === id)
             .map((p) => p.studentId);
@@ -803,11 +805,14 @@ function openGroupForm(id = null) {
             if (ids.includes(s.id)) s.group = name;
           });
         } else
-          savedId = Ledger.addGroup(
-            f,
-            name,
-            document.getElementById("groupRequiresParent").checked,
-          ).id;
+          {
+            savedId = Ledger.addGroup(
+              f,
+              name,
+              document.getElementById("groupRequiresParent").checked,
+            ).id;
+            Ledger.setGroupCoach(f, savedId, document.getElementById("groupCoachName").value);
+          }
       });
       if (ok) {
         closeFinancialModal();
