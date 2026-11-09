@@ -588,10 +588,13 @@ function renderUtility(parent) {
     warning.textContent="Если появляется ошибка «The quota has been exceeded», сначала сохраните аварийный JSON во внешние «Файлы», затем освободите место от старых снимков.";
     card.appendChild(warning);
     button(card, "1. Скачать аварийный JSON", exportCompactBackup, "export", "btn primary");
-    const usage=dataStore.storageUsage();
+    let usage=null;
+    try {usage=dataStore.storageUsage();} catch(error) { /* blocked/private storage must not break the backup screen */ }
     const info=document.createElement("p");info.className="small";
-    info.textContent="Внутренних снимков: "+usage.snapshots+
-      " · занимают примерно "+(usage.snapshotsBytes/1024/1024).toFixed(2)+" МиБ";
+    info.textContent=usage
+      ? "Внутренних снимков: "+usage.snapshots+
+        " · занимают примерно "+(usage.snapshotsBytes/1024/1024).toFixed(2)+" МиБ"
+      : "Доступ к хранилищу ограничен. Попробуйте скачать резервную копию; не очищайте браузер.";
     card.appendChild(info);
     button(card, "2. Освободить место от старых снимков", cleanupOldBackups, "backup", "btn");
     parent.appendChild(card);
