@@ -192,6 +192,60 @@
       }
       return raw;
     }
+
+    function exportCompactBackup() {
+      const raw = rawBackup();
+      Object.keys(raw).filter(k => k.startsWith(PREFIX)).forEach(k => delete raw[k]);
+      return {
+        format: "CoachControlBackup",
+        formatVersion: 1,
+        exportedAt: new Date().toISOString(),
+        snapshotNote: "Компактная аварийная копия без старых внутренних снимков.",
+        raw,
+        current: blocked ? null : clone(state),
+        loadError: error || null,
+      };
+    }
+    function storageUsage() {
+      const snapshots = [];
+      let totalBytes = 0;
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        const value = storage.getItem(key) || "";
+        totalBytes += 2 * (key.length + value.length);
+        if (key.startsWith(PREFIX)) snapshots.push({key, bytes: 2 * (key.length + value.length)});
+      }
+      return { snapshots: snapshots.length, snapshotsBytes: snapshots.reduce((n,e) => n + e.bytes,0), totalBytes };
+    }
+    function removeOldSnapshots() {
+      if (blocked || storage.getItem(KEY) !== expected || expected === null)
+        throw Error("Нет подтверждённой текущей базы. Нельзя удалять снимки.");
+      const parsed = JSON.parse(expected);
+      if (parsed.revision !== state.revision || parsed.schemaVersion !== state.schemaVersion)
+        throw Error("Текущая база не совпадает с сохранённой.");
+      if (accounting) {
+        accounting.validate(parsed.finance);
+        accounting.validateSource(parsed.finance, parsed);
+      }
+      // Intentionally never touch the active document, source keys, or unrelated data.
+      // Caller must explicitly confirm that an external JSON file was saved.
+      const removable = [];
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        if (!key.startsWith(PREFIX)) continue;
+        const raw = storage.getItem(key);
+        try {
+          const snapshot = JSON.parse(raw);
+          if (snapshot?.format === "CoachControlBackup" &&
+              snapshot.formatVersion === 1 &&
+              snapshot.current && typeof snapshot.current === "object") removable.push(key);
+        } catch (_) { /* preserve damaged/unknown snapshots */ }
+      }
+      removable.forEach(key => storage.removeItem(key));
+      if (storage.getItem(KEY) !== expected)
+        throw Error("Текущая база изменилась в другой вкладке.");
+      return { removed: removable.length, remaining: storageUsage().snapshots };
+    }
     function commit(students, expenses, finance) {
       if (blocked)
         throw Error(
@@ -331,8 +385,10 @@
             "Старые расходы нельзя изменять. Используйте финансовый журнал.",
           );
       }
-      // Backup first: a failed backup prevents all changes to the active document.
-      const backupKey = PREFIX + crypto.randomUUID();
+      // Reuse a fixed snapshot slot. Creating an unbounded snapshot for every edit
+      // used to fill the browser's localStorage and block new students/payments.
+      // setItem is atomic: if quota is exceeded, the old snapshot is retained.
+      const backupKey = PREFIX + "rolling-v2";
       const raw = rawBackup();
       // Prior backups are independently retained; avoid exponential nesting.
       Object.keys(raw)
@@ -398,6 +454,9 @@
       get error() {
         return error;
       },
+      storageUsage,
+      exportCompactBackup,
+      removeOldSnapshots,
       exportBackup: () => ({
         format: "CoachControlBackup",
         formatVersion: 1,
