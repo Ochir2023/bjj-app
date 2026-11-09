@@ -582,7 +582,7 @@ function renderUtility(parent) {
     card.className = "card export-option";
     card.innerHTML =
       '<h2>Ваши данные — с вами</h2><p class="small">Полный JSON: ученики, архив, операции, история, исходные записи и локальные снимки. Файл не зашифрован — храните его в защищённом месте вне браузера.</p>';
-    button(card, "Полная резервная копия JSON", exportBackup, "backup", "btn primary");
+    button(card, "Резервная копия JSON", exportBackup, "backup", "btn primary");
     const warning=document.createElement("p");
     warning.className="small";
     warning.textContent="Если появляется ошибка «The quota has been exceeded», сначала сохраните аварийный JSON во внешние «Файлы», затем освободите место от старых снимков.";
