@@ -7,6 +7,7 @@ class Storage {
   key(i){return [...this.values.keys()][i];}
   getItem(k){if(this.fail==='read')throw Error('SecurityError');return this.values.get(k)??null;}
   setItem(k,v){if(this.fail==='all'||this.fail===k)throw Error('QuotaExceededError');this.values.set(k,String(v));}
+  removeItem(k){this.values.delete(k);}
 }
 const student={id:'s',name:'Иван',group:'Детская',phone:'1',parent:'Родитель',rate:3000,payments:{0:true,1:1500,2:{amount:3000,date:'2025-03-01',extra:'preserve'}},paid:true,custom:'keep'};
 const legacy=()=>new Storage({bjj_students:JSON.stringify([student]),bjj_expenses:'[]'});
@@ -31,3 +32,64 @@ test('unverified backup prevents migration',()=>{const s=legacy(),write=s.setIte
 test('canonical records without IDs are blocked rather than silently reidentified',()=>{const s=new Storage({[KEY]:JSON.stringify({schemaVersion:1,revision:1,students:[{name:'No ID'}],expenses:[],archivedStudents:[],archivedExpenses:[]})});const d=create(s);d.load();assert.equal(d.blocked,true);});
 
 test('empty expense string is corruption, not an empty list',()=>{const s=new Storage({bjj_expenses:''}),d=create(s);d.load();assert.equal(d.blocked,true);assert.equal(d.exportBackup().raw.bjj_expenses,'');assert.throws(()=>d.commit([],[]));});
+
+test('many edits reuse one internal snapshot rather than filling localStorage',()=>{
+  const s=legacy(),d=create(s),v=d.load();
+  for(let i=0;i<30;i++) {
+    v.students[0].name='Ученик '+i;
+    d.commit(v.students,v.expenses);
+  }
+  const keys=[...s.values.keys()].filter(k=>k.startsWith('coachcontrol.backup.'));
+  assert.deepEqual(keys,['coachcontrol.backup.rolling-v2']);
+  assert.equal(JSON.parse(s.getItem(KEY)).students[0].name,'Ученик 29');
+});
+test('quota recovery preserves current data while removing only verified snapshots',()=>{
+  const s=legacy(),d=create(s),v=d.load();
+  d.commit(v.students,v.expenses);
+  const current=s.getItem(KEY);
+  const historical=JSON.stringify({
+    format:'CoachControlBackup',formatVersion:1,
+    current:d.snapshot(),createdAt:'2026-01-01T00:00:00Z'
+  });
+  for(let i=0;i<5;i++)s.setItem('coachcontrol.backup.historical-'+i,historical);
+  s.setItem('coachcontrol.backup.unknown','corrupted important data');
+  const compact=d.exportCompactBackup();
+  assert.equal(compact.raw[KEY],current);
+  assert.equal(compact.current.students[0].name,'Иван');
+  assert.equal(Object.keys(compact.raw).some(k=>k.startsWith('coachcontrol.backup.')),false);
+  assert.ok(Object.keys(d.exportBackup().raw).some(k=>k.startsWith('coachcontrol.backup.')));
+  const result=d.removeOldSnapshots();
+  assert.equal(result.removed,6);
+  assert.equal(s.getItem(KEY),current);
+  assert.equal(s.getItem('bjj_students'),JSON.stringify([student]));
+  assert.equal(s.getItem('coachcontrol.backup.unknown'),'corrupted important data');
+  assert.equal(d.storageUsage().snapshots,1);
+  const next=d.snapshot();
+  next.students[0].name='После очистки';
+  d.commit(next.students,next.expenses);
+  assert.equal(JSON.parse(s.getItem(KEY)).students[0].name,'После очистки');
+});
+test('quota failure does not change current student records and recovery permits saving',()=>{
+  const s=legacy(),d=create(s),v=d.load();
+  d.commit(v.students,v.expenses);
+  const historical=JSON.stringify({
+    format:'CoachControlBackup',formatVersion:1,current:d.snapshot()
+  });
+  for(let i=0;i<5;i++)s.setItem('coachcontrol.backup.historical-'+i,historical);
+  let maxBytes=[...s.values].reduce((n,[k,value])=>n+2*(k.length+value.length),0);
+  const originalSet=s.setItem.bind(s);
+  s.setItem=(k,v)=>{
+    const currentBytes=[...s.values].reduce((n,[key,value])=>n+2*(key.length+value.length),0);
+    const old=s.getItem(k);
+    const prospective=currentBytes-2*(old===null?0:k.length+old.length)+2*(k.length+String(v).length);
+    if(prospective>maxBytes)throw Error('QuotaExceededError');
+    originalSet(k,v);
+  };
+  const changed=d.snapshot();changed.students[0].name='Новый ученик';
+  assert.throws(()=>d.commit(changed.students,changed.expenses),/QuotaExceededError/);
+  assert.equal(JSON.parse(s.getItem(KEY)).students[0].name,'Иван');
+  assert.equal(d.exportCompactBackup().current.students[0].name,'Иван');
+  d.removeOldSnapshots();
+  d.commit(changed.students,changed.expenses);
+  assert.equal(JSON.parse(s.getItem(KEY)).students[0].name,'Новый ученик');
+});
