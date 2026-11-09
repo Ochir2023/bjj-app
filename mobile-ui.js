@@ -583,6 +583,20 @@ function renderUtility(parent) {
     card.innerHTML =
       '<h2>Ваши данные — с вами</h2><p class="small">Полный JSON: ученики, архив, операции, история, исходные записи и локальные снимки. Файл не зашифрован — храните его в защищённом месте вне браузера.</p>';
     button(card, "Резервная копия JSON", exportBackup, "backup", "btn primary");
+    const warning=document.createElement("p");
+    warning.className="small";
+    warning.textContent="Если появляется ошибка «The quota has been exceeded», сначала сохраните аварийный JSON во внешние «Файлы», затем освободите место от старых снимков.";
+    card.appendChild(warning);
+    button(card, "1. Скачать аварийный JSON", exportCompactBackup, "export", "btn primary");
+    let usage=null;
+    try {usage=dataStore.storageUsage();} catch(error) { /* blocked/private storage must not break the backup screen */ }
+    const info=document.createElement("p");info.className="small";
+    info.textContent=usage
+      ? "Внутренних снимков: "+usage.snapshots+
+        " · занимают примерно "+(usage.snapshotsBytes/1024/1024).toFixed(2)+" МиБ"
+      : "Доступ к хранилищу ограничен. Попробуйте скачать резервную копию; не очищайте браузер.";
+    card.appendChild(info);
+    button(card, "2. Освободить место от старых снимков", cleanupOldBackups, "backup", "btn");
     parent.appendChild(card);
   } else if (currentScreen === "pro") {
     const card = document.createElement("div");
@@ -596,7 +610,7 @@ function renderUtility(parent) {
       '<div class="settings-row"><strong>Хранение данных</strong><p class="small">Только в этом браузере. Аккаунтов и облачной копии пока нет.</p></div>';
     const privacy = document.createElement("div");
     privacy.className = "settings-row";
-    button(privacy, "Резервная копия JSON", exportBackup, "backup");
+    button(privacy, "Резервная копия JSON", () => navigate("backup"), "backup");
     button(privacy, "Архив учеников", openArchive, "groups");
     button(privacy, "Без определённого года", openLegacy, "backup");
     button(privacy, "Журнал изменений", () => openAudit(), "expenses");
