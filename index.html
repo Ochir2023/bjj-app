@@ -375,7 +375,9 @@ async function save(){
   } catch(error) {
     const previous = dataStore.snapshot();
     students = previous.students; expenses = previous.expenses; finance = previous.finance;
-    alert("Изменения не сохранены. Запись остановлена. " + error.message + " Используйте резервную копию JSON.");
+    alert("Изменения не сохранены. Запись остановлена. " + error.message +
+      " Если закончилось место, откройте меню → Резервная копия → Аварийный JSON. " +
+      "После проверки сохранённого файла можно освободить место от старых снимков. Не очищайте Safari.");
     return false;
   } finally { controls.forEach(el => el.disabled = false); }
 }
@@ -391,6 +393,34 @@ async function exportBackup(){
     link.href = url; link.download = "coachcontrol-backup-" + new Date().toISOString().replace(/[:.]/g,"-") + ".json";
     link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch(error) { alert("Не удалось экспортировать данные: " + error.message + ". Не очищайте хранилище браузера."); }
+}
+async function exportCompactBackup(){
+  try {
+    const backup = navigator.locks
+      ? await navigator.locks.request("coachcontrol-data-write",{mode:"shared"},()=>dataStore.exportCompactBackup())
+      : dataStore.exportCompactBackup();
+    const blob = new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href=url;
+    link.download="coachcontrol-emergency-"+new Date().toISOString().replace(/[:.]/g,"-")+".json";
+    link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+  } catch(error) {
+    alert("Не удалось выгрузить аварийную копию: "+error.message+". Не очищайте браузер.");
+  }
+}
+async function cleanupOldBackups(){
+  if(!confirm("Сначала скачайте «Аварийный JSON» и проверьте, что файл сохранён на телефоне в приложении «Файлы» или другом надёжном месте. Вы действительно сохранили файл?")) return;
+  if(!confirm("Удалить только накопившиеся внутренние резервные снимки CoachControl? Действующие ученики, платежи, архив и история операций останутся в текущей базе.")) return;
+  try {
+    if(!navigator.locks) throw Error("В браузере нет безопасной блокировки записи.");
+    const result=await navigator.locks.request("coachcontrol-data-write",()=>dataStore.removeOldSnapshots());
+    alert("Удалено старых снимков: "+result.removed+". Текущие ученики и финансы не удалялись. Повторите сохранение.");
+    render();
+  } catch(error) {
+    alert("Освободить место не удалось: "+error.message+". Не очищайте хранилище браузера.");
+  }
 }
 function findIndexById(id){return students.findIndex(s=>s.id===id);}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
